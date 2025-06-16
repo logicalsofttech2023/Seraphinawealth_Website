@@ -2,7 +2,7 @@ import React, { useContext } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { MobileMenuContext } from "./MobileMenuContext";
 import { CgProfile } from "react-icons/cg";
-
+import logo from "./logo.png"; // Adjust the path as necessary
 
 const Header = () => {
   const location = useLocation();
@@ -22,11 +22,10 @@ const Header = () => {
                   <Link to="/">
                     <img
                       style={{
-                        width: "25%",
-                        borderRadius: "50%",
+                        width: "100px",
                         height: "auto",
                       }}
-                      src="/assets/images/logo.jpg"
+                      src={logo}
                       alt="Company Logo"
                     />
                   </Link>
@@ -66,29 +65,7 @@ const Header = () => {
                       >
                         <Link to="/about">About Us</Link>
                       </li>
-                      {/* <li className={
-                location.pathname === "/services" || 
-                location.pathname === "/services-2" || 
-                location.pathname === "/services-details" 
-                ? "dropdown active" 
-                : "dropdown"
-              }>
-                <Link to="/services">Investment</Link>
-                <ul>
-                  <li className={location.pathname === "/services" ? "active" : ""}>
-                    <Link to="/services">Services</Link>
-                  </li>
-                  <li className={location.pathname === "/services-2" ? "active" : ""}>
-                    <Link to="/services-2">Services Two</Link>
-                  </li>
-                  <li className={location.pathname === "/services-details" ? "active" : ""}>
-                    <Link to="/services-details">Service Details</Link>
-                  </li>
-                </ul>
-                <div className="dropdown-btn">
-                  <i className="fa fa-angle-down" />
-                </div>
-              </li> */}
+
                       <li
                         className={
                           location.pathname === "/investmentplans"
@@ -114,9 +91,8 @@ const Header = () => {
               <div className="header_right_content">
                 <Link to={"/profile"} className="search-toggler">
                   <CgProfile style={{ fontSize: "40px" }} />
-
                 </Link>
-                <div className="link-btn">
+                <div onClick={() => navigate("/login")} className="link-btn">
                   <Link to="/login" className="btn_style_one">
                     Get Started
                   </Link>
@@ -135,11 +111,10 @@ const Header = () => {
                   <Link to="/">
                     <img
                       style={{
-                        width: "25%",
-                        borderRadius: "50%",
+                        width: "100px",
                         height: "auto",
                       }}
-                      src="/assets/images/logo.jpg"
+                      src={logo}
                       alt="Company Logo"
                     />
                   </Link>
@@ -169,30 +144,7 @@ const Header = () => {
                       >
                         <Link to="/about">About Us</Link>
                       </li>
-                      {/* <li className={
-                location.pathname === "/services" || 
-                location.pathname === "/services-2" || 
-                location.pathname === "/services-details" 
-                ? "dropdown active" 
-                : "dropdown"
-              }>
-                <Link to="/services">Services</Link>
-                <ul>
-                  <li className={location.pathname === "/services" ? "active" : ""}>
-                    <Link to="/services">Services</Link>
-                  </li>
-                  <li className={location.pathname === "/services-2" ? "active" : ""}>
-                    <Link to="/services-2">Services Two</Link>
-                  </li>
-                  <li className={location.pathname === "/services-details" ? "active" : ""}>
-                    <Link to="/services-details">Service Details</Link>
-                  </li>
-                </ul>
-                <div className="dropdown-btn">
-                  <i className="fa fa-angle-down" />
-                </div>
-              </li> */}
-
+                     
                       <li
                         className={
                           location.pathname === "/investmentplans"
@@ -215,9 +167,9 @@ const Header = () => {
               </div>
 
               <div className="header_right_content">
-                <button className="search-toggler">
+                <Link to={"/profile"} className="search-toggler">
                   <CgProfile style={{ fontSize: "40px" }} />
-                </button>
+                </Link>
                 <div className="link-btn">
                   <Link to="/login" className="btn_style_one">
                     Get Started
@@ -248,11 +200,10 @@ const Header = () => {
                   <Link to="/">
                     <img
                       style={{
-                        width: "25%",
-                        borderRadius: "50%",
+                        width: "100px",
                         height: "auto",
                       }}
-                      src="/assets/images/logo.jpg"
+                      src={logo}
                       alt="Company Logo"
                     />
                   </Link>

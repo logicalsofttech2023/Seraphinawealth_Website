@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { FaFacebook, FaTwitter, FaLinkedinIn } from "react-icons/fa";
 import { HiOutlineLogout } from "react-icons/hi";
+import InvestmentPerformanceChat from "../Charts/InvestmentPerformanceChat";
+import InvestmentPerformanceCard from "../Charts/InvestmentPerformanceCard";
+import ActivePlanSnapshot from "../Charts/ActivePlanSnapshot";
 const dummyUser = {
   // Basic Info
   profileImage: "https://randomuser.me/api/portraits/men/1.jpg",
@@ -13,9 +16,7 @@ const dummyUser = {
   ],
   menuItems: [
     { label: "Dashboard" },
-    { label: "Deposit Money" },
-    { label: "Withdraw Money" },
-    { label: "Total Investment" },
+    { label: "My Wallet" },
     { label: "Transaction" },
     { label: "Notifications" },
     { label: "Settings" },
@@ -71,21 +72,113 @@ const dummyUser = {
     },
   ],
 };
+import {
+  BsCashCoin,
+  BsGraphUp,
+  BsShieldCheck,
+  BsExclamationTriangle,
+  BsMegaphone,
+} from "react-icons/bs";
 
 const Profile = () => {
   const [activeSection, setActiveSection] = useState("Dashboard");
   const [isEditing, setIsEditing] = useState(false);
   const [userData, setUserData] = useState(dummyUser);
-  const [isEditingBank, setIsEditingBank] = useState(false);
-  const [bankFormData, setBankFormData] = useState({
-    accountHolderName: "",
-    accountNumber: "",
-    bankName: "",
-    ifscCode: "",
-    accountType: "",
-    branch: "",
-    bankProof: null,
+  const [showAddMoneyPopup, setShowAddMoneyPopup] = useState(false);
+  const [showWithdrawPopup, setShowWithdrawPopup] = useState(false);
+  const [showBankAccountPopup, setShowBankAccountPopup] = useState(false);
+  const [bankAccount, setBankAccount] = useState({
+    bankName: "HDFC Bank",
+    accountNumber: "1234567890",
+    ifscCode: "HDFC0001234",
+    accountHolderName: "John Doe",
   });
+
+  const [filter, setFilter] = useState("all");
+  const [transactions, setTransactions] = useState([
+    {
+      id: 1,
+      date: "2025-06-01",
+
+      type: "Deposit",
+      amount: "+ ₹5,000",
+      status: "Success",
+    },
+    {
+      id: 2,
+      date: "2025-06-03",
+      type: "Withdrawal",
+      amount: "- ₹2,000",
+      status: "Pending",
+    },
+    {
+      id: 3,
+      date: "2025-06-05",
+      txnId: "TXN12345680",
+      type: "Deposit",
+      amount: "+ ₹10,000",
+      status: "Success",
+    },
+    {
+      id: 4,
+      date: "2025-06-06",
+      type: "Withdrawal",
+      amount: "- ₹1,500",
+      status: "Failed",
+    },
+  ]);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const Popup = ({ title, children, onClose }) => (
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(0,0,0,0.5)",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        zIndex: 1000,
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: "white",
+          padding: "2rem",
+          borderRadius: "10px",
+          width: "90%",
+          maxWidth: "500px",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "1.5rem",
+          }}
+        >
+          <h3 style={{ fontWeight: "600" }}>{title}</h3>
+          <button
+            onClick={onClose}
+            style={{
+              background: "none",
+              border: "none",
+              fontSize: "1.5rem",
+              cursor: "pointer",
+              color: "#6c757d",
+            }}
+          >
+            &times;
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -103,32 +196,33 @@ const Profile = () => {
     setIsEditing(false);
   };
 
-  const handleBankInputChange = (e) => {
-    const { id, value } = e.target;
-    setBankFormData({ ...bankFormData, [id]: value });
-  };
+  const handleImageUpload = (e, fieldName) => {
+  const file = e.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setUserData(prev => ({
+        ...prev,
+        [fieldName]: reader.result
+      }));
+    };
+    reader.readAsDataURL(file);
+  }
+};
 
-  const handleBankProofUpload = (e) => {
-    // Handle file upload logic
-  };
+const handleRemoveImage = (fieldName) => {
+  setUserData(prev => ({
+    ...prev,
+    [fieldName]: null
+  }));
+};
 
-  const handleBankSubmit = (e) => {
-    e.preventDefault();
-    // Handle form submission
-  };
-
-  const handleSetPrimary = (index) => {
-    // Set account as primary
-  };
-
-  const handleDeleteBank = (index) => {
-    // Delete bank account
-  };
-
-  const handleEditBank = (index) => {
-    // Edit existing bank account
-    setIsEditingBank(true);
-    setBankFormData(userData.bankAccounts[index]);
+  const iconMap = {
+    "cash-coin": <BsCashCoin />,
+    "graph-up": <BsGraphUp />,
+    "shield-check": <BsShieldCheck />,
+    "exclamation-triangle": <BsExclamationTriangle />,
+    megaphone: <BsMegaphone />,
   };
 
   return (
@@ -142,7 +236,6 @@ const Profile = () => {
             minHeight: "100vh",
             position: "sticky",
             top: "0",
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
             borderRight: "1px solid #f0f0f0",
           }}
         >
@@ -227,6 +320,7 @@ const Profile = () => {
                     ":hover": {
                       backgroundColor: "#f7fafc",
                     },
+                    cursor: "pointer",
                   }}
                 >
                   {item.label}
@@ -257,16 +351,75 @@ const Profile = () => {
 
         {/* Main Content */}
         <main className="flex-grow-1 p-3 p-md-4 p-lg-5">
-          {/* User Photo and Name (Visible only on small screens) */}
-          <div className="d-md-none d-flex flex-column align-items-center mb-4">
-            <img
-              src={dummyUser.profileImage}
-              alt="Profile"
-              className="rounded-circle"
-              style={{ width: "112px", height: "112px" }}
-            />
-            <h2 className="mt-4 font-weight-semibold h4">{dummyUser.name}</h2>
-            <p className="text-muted">@{dummyUser.username}</p>
+          {/* Profile Icon for Mobile */}
+          <div className="d-md-none position-relative d-flex justify-content-end mb-3">
+            {/* Profile Button */}
+            <button
+              className="btn btn-light rounded-circle shadow-sm"
+              style={{ width: "48px", height: "48px", padding: 0 }}
+              onClick={() => setShowDropdown(!showDropdown)}
+            >
+              <img
+                src={dummyUser.profileImage}
+                alt="Profile"
+                className="rounded-circle"
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            </button>
+
+            {/* Dropdown Menu */}
+            {showDropdown && (
+              <div
+                className="position-absolute"
+                style={{
+                  top: "60px",
+                  right: 0,
+                  width: "220px",
+                  backgroundColor: "#fff",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "8px",
+                  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+                  zIndex: 1050,
+                }}
+              >
+                <div className="text-center py-3 border-bottom">
+                  <h6 className="mb-0">{dummyUser.name}</h6>
+                  <small>@{dummyUser.username}</small>
+                </div>
+
+                <ul className="list-unstyled m-0 p-2">
+                  {dummyUser.menuItems.map((item, index) => (
+                    <li
+                      key={index}
+                      className={`py-2 px-3 rounded ${
+                        activeSection === item.label
+                          ? "bg-light fw-semibold"
+                          : ""
+                      }`}
+                      style={{ cursor: "pointer" }}
+                      onClick={() => {
+                        setActiveSection(item.label);
+                        setShowDropdown(false);
+                      }}
+                    >
+                      {item.label}
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="border-top p-2">
+                  <button
+                    className="btn btn-outline-danger w-100"
+                    onClick={() => {
+                      // logout logic
+                      setShowDropdown(false);
+                    }}
+                  >
+                    <HiOutlineLogout className="me-2" /> Logout
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {activeSection === "Dashboard" && (
@@ -322,142 +475,20 @@ const Profile = () => {
                         </button>
                       </div>
                     </div>
-
-                   
                   </div>
                 </div>
 
                 {/* Stats Cards */}
                 <div className="row g-4 mb-4">
-                  {[
-                    {
-                      title: "Deposit",
-                      amount: "$500",
-                      icon: "flaticon-035-savings",
-                      color: "primary",
-                      trend: "up",
-                    },
-                    {
-                      title: "Withdraw",
-                      amount: "$500",
-                      icon: "flaticon-041-umbrella",
-                      color: "info",
-                      trend: "down",
-                    },
-                    {
-                      title: "Invest",
-                      amount: "$500",
-                      icon: "flaticon-004-bar-chart",
-                      color: "success",
-                      trend: "up",
-                    },
-                    {
-                      title: "Wallet",
-                      amount: "$1200",
-                      icon: "flaticon-042-wallet",
-                      color: "warning",
-                      trend: "up",
-                    },
-                    {
-                      title: "Referral",
-                      amount: "$500",
-                      icon: "flaticon-010-cloud",
-                      color: "secondary",
-                      trend: "neutral",
-                    },
-                    {
-                      title: "Profit",
-                      amount: "$500",
-                      icon: "flaticon-027-money-bag",
-                      color: "danger",
-                      trend: "up",
-                    },
-                  ].map((item, index) => (
-                    <div key={index} className="col-xl-4 col-lg-4 col-md-6">
-                      <div
-                        className="card border-0 shadow-sm"
-                        style={{
-                          borderRadius: "15px",
-                          background: "linear-gradient(106deg, rgb(231, 112, 193) 11.27%, rgb(159, 112, 253) 88.73%)",
-                          transition: "all 0.3s ease",
-                          borderLeft: `4px solid var(--bs-${item.color})`,
-                        }}
-                        onMouseOver={(e) =>
-                          (e.currentTarget.style.transform = "translateY(-5px)")
-                        }
-                        onMouseOut={(e) =>
-                          (e.currentTarget.style.transform = "translateY(0)")
-                        }
-                      >
-                        <div className="card-body">
-                          <div className="d-flex justify-content-between align-items-center">
-                            <div style={{ width: "100%" }}>
-                              <h6
-                                className="mb-2"
-                                style={{
-                                  fontSize: "13px",
-                                  fontWeight: "500",
-                                  textTransform: "uppercase",
-                                  letterSpacing: "0.5px",
-                                  color: "#fff",
-                                  float: "right",
-                                  marginTop: "2px",
-                                }}
-                              >
-                                {item.title}
-                              </h6>
-                              <h4
-                                className="mb-1"
-                                style={{
-                                  fontWeight: "700",
-                                  color: "#fff",
-                                }}
-                              >
-                                {item.amount}
-                              </h4>
-                              <div className="d-flex align-items-center mt-2">
-                                <span
-                                  className={`badge bg-${item.color}-subtle text-${item.color} me-2`}
-                                  style={{
-                                    fontSize: "11px",
-                                    padding: "3px 8px",
-                                    borderRadius: "20px",
-                                    fontWeight: "500",
-                                  }}
-                                >
-                                  {item.trend === "up" ? (
-                                    <>
-                                      <i className="ti-arrow-up me-1" /> 12%
-                                    </>
-                                  ) : item.trend === "down" ? (
-                                    <>
-                                      <i className="ti-arrow-down me-1" /> 5%
-                                    </>
-                                  ) : (
-                                    <>
-                                      <i className="ti-minus me-1" /> 0%
-                                    </>
-                                  )}
-                                </span>
-                                <small
-                                  
-                                  style={{ fontSize: "12px", color: "#fff" }}
-                                >
-                                  vs last month
-                                </small>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                  <InvestmentPerformanceCard />
+                  <InvestmentPerformanceChat />
+                  <ActivePlanSnapshot />
                 </div>
               </section>
             </>
           )}
 
-          {activeSection === "Deposit Money" && (
+          {activeSection === "My Wallet" && (
             <section
               style={{
                 backgroundColor: "#ffffff",
@@ -478,1364 +509,1951 @@ const Profile = () => {
                 My Wallet
               </h2>
 
-              {/* Add Wallet Form */}
+              {/* Available Balance Card */}
+              <div
+                style={{
+                  backgroundColor: "#f8f9fa",
+                  borderRadius: "10px",
+                  padding: "1.5rem",
+                  marginBottom: "1.5rem",
+                  border: "1px solid #e9ecef",
+                }}
+              >
+                <div
+                  style={{ display: "flex", justifyContent: "space-between" }}
+                >
+                  <div>
+                    <p style={{ color: "#6c757d", marginBottom: "0.5rem" }}>
+                      Available Balance
+                    </p>
+                    <h3 style={{ fontSize: "24px", fontWeight: "700" }}>
+                      ₹12,456.00
+                    </h3>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <p style={{ color: "#6c757d", marginBottom: "0.5rem" }}>
+                      Last Added
+                    </p>
+                    <p style={{ fontWeight: "500" }}>+ ₹5,000 (2 days ago)</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Wallet Action Buttons */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: "1rem",
+                  marginBottom: "2rem",
+                }}
+              >
+                <button
+                  onClick={() => setShowAddMoneyPopup(true)}
+                  style={{
+                    flex: 1,
+                    padding: "12px",
+                    borderRadius: "8px",
+                    border: "none",
+                    background:
+                      "linear-gradient(106deg, #E770C1 11.27%, #9F70FD 88.73%)",
+                    color: "white",
+                    fontWeight: 600,
+                    fontSize: "16px",
+                    cursor: "pointer",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                  }}
+                >
+                  Add Money
+                </button>
+
+                <button
+                  onClick={() => setShowWithdrawPopup(true)}
+                  style={{
+                    flex: 1,
+                    padding: "12px",
+                    borderRadius: "8px",
+                    border: "1px solid #E770C1",
+                    background: "white",
+                    color: "#E770C1",
+                    fontWeight: 600,
+                    fontSize: "16px",
+                    cursor: "pointer",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                  }}
+                >
+                  Withdraw
+                </button>
+              </div>
+
+              {/* Linked Bank Account Section */}
               <div
                 style={{
                   border: "1px solid #dee2e6",
-                  padding: "1.5rem",
                   borderRadius: "10px",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                  padding: "1.5rem",
                   marginBottom: "2rem",
-                  backgroundColor: "#f8f9fa",
                 }}
               >
-                <h5 style={{ fontWeight: 600, marginBottom: "1rem" }}>
-                  Add Balance
-                </h5>
-                <form className="row g-3">
-                  <div className="col-md-6">
-                    <input
-                      type="number"
-                      className="form-control"
-                      placeholder="Enter amount (₹)"
-                      min="1"
-                      required
-                      style={{
-                        padding: "10px",
-                        borderRadius: "8px",
-                        border: "1px solid #ced4da",
-                        fontSize: "16px",
-                      }}
-                    />
-                  </div>
-                  <div className="col-md-6 d-flex align-items-center">
-                    <button
-                      type="submit"
-                      className="btn btn-success"
-                      style={{
-                        width: "100%",
-                        padding: "10px",
-                        fontWeight: 600,
-                        fontSize: "16px",
-                        borderRadius: "8px",
-                        background: "linear-gradient(106deg, #E770C1 11.27%, #9F70FD 88.73%)"
-                      }}
-                    >
-                      Add to Wallet
-                    </button>
-                  </div>
-                </form>
-              </div>
-
-              {/* Wallet Transactions Table */}
-              <h5 style={{ fontWeight: 600, marginBottom: "1rem" }}>
-                Transaction History
-              </h5>
-              <div className="table-responsive">
-                <table
-                  className="table table-bordered table-striped align-middle"
+                <div
                   style={{
-                    borderRadius: "8px",
-                    overflow: "hidden",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "1rem",
                   }}
                 >
-                  <thead style={{ backgroundColor: "#d1e7dd" }}>
-                    <tr>
-                      <th>#</th>
-                      <th>Date</th>
-                      <th>Transaction ID</th>
-                      <th>Type</th>
-                      <th>Amount</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[
-                      {
-                        id: 1,
-                        date: "2025-06-01",
-                        txnId: "TXN123456",
-                        type: "Credit",
-                        amount: "+ ₹500",
-                        status: "Success",
-                      },
-                      {
-                        id: 2,
-                        date: "2025-05-22",
-                        txnId: "TXN123457",
-                        type: "Debit",
-                        amount: "- ₹200",
-                        status: "Success",
-                      },
-                      {
-                        id: 3,
-                        date: "2025-05-15",
-                        txnId: "TXN123458",
-                        type: "Credit",
-                        amount: "+ ₹1,000",
-                        status: "Pending",
-                      },
-                    ].map((txn, index) => (
-                      <tr key={txn.id}>
-                        <td>{index + 1}</td>
-                        <td>{txn.date}</td>
-                        <td>{txn.txnId}</td>
-                        <td>
-                          <span
-                            className={`badge ${
-                              txn.type === "Credit" ? "bg-success" : "bg-danger"
-                            }`}
-                            style={{ padding: "6px 12px", fontSize: "14px" }}
-                          >
-                            {txn.type}
-                          </span>
-                        </td>
-                        <td>{txn.amount}</td>
-                        <td>
-                          <span
-                            className={`badge ${
-                              txn.status === "Success"
-                                ? "bg-success"
-                                : txn.status === "Pending"
-                                ? "bg-warning text-dark"
-                                : "bg-secondary"
-                            }`}
-                            style={{ padding: "6px 12px", fontSize: "14px" }}
-                          >
-                            {txn.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          )}
-
-          {activeSection === "Withdraw Money" && (
-            <section className="flex-grow-1 p-3 p-md-4 p-lg-5 shadow-sm bg-white mt-4 rounded">
-              <div className="d-flex justify-content-between align-items-center mb-4">
-                <h2 className="h4 fw-semibold mb-0">Withdraw Funds</h2>
-                <div className="bg-primary bg-opacity-10 px-3 py-2 rounded-pill">
-                  <span className="text-muted me-2">Available Balance:</span>
-                  <span className="fw-bold">₹18,500</span>
-                </div>
-              </div>
-
-              {/* Withdrawal Request Form */}
-              <div className="border-0 bg-light p-4 rounded-3 mb-5">
-                <h5 className="fw-semibold mb-3 d-flex align-items-center">
-                  <i className="bi bi-cash-coin me-2"></i>Request Withdrawal
-                </h5>
-                <form className="row g-3">
-                  <div className="col-md-6">
-                    <label htmlFor="bankSelect" className="form-label">
-                      Select Bank Account
-                    </label>
-                    <select className="form-select" id="bankSelect" required>
-                      <option value="">Choose account...</option>
-                      <option value="1">HDFC Bank - XXXX-5678</option>
-                      <option value="2">ICICI Bank - XXXX-9012</option>
-                    </select>
-                  </div>
-                  <div className="col-md-6">
-                    <label htmlFor="amount" className="form-label">
-                      Amount (₹)
-                    </label>
-                    <div className="input-group">
-                      <span className="input-group-text">₹</span>
-                      <input
-                        type="number"
-                        className="form-control"
-                        id="amount"
-                        placeholder="Enter amount"
-                        min="100"
-                        max="18500"
-                        step="100"
-                        required
+                  <h3 style={{ fontWeight: "600" }}>Linked Bank Account</h3>
+                  <button
+                    onClick={() => setShowBankAccountPopup(true)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#E770C1",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    <span>Edit</span>
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M11 4H4V11H11V4Z"
+                        stroke="#E770C1"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
                       />
-                    </div>
-                    <div className="form-text">Minimum withdrawal: ₹100</div>
-                  </div>
-                  <div className="col-12">
-                    <button type="submit" style={{ background: "linear-gradient(106deg, #E770C1 11.27%, #9F70FD 88.73%)"}} className="btn btn-primary px-4">
-                      <i className="bi bi-send-check me-2"></i>Request
-                      Withdrawal
-                    </button>
-                  </div>
-                </form>
-              </div>
-
-              {/* Recent Transactions */}
-              <div className="border-top pt-4">
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                  <h5 className="fw-semibold mb-0 d-flex align-items-center">
-                    <i className="bi bi-clock-history me-2"></i>Recent
-                    Transactions
-                  </h5>
-                  <button className="btn btn-sm btn-outline-secondary">
-                    <i className="bi bi-download me-1"></i>Export
+                      <path
+                        d="M20 13H13V20H20V13Z"
+                        stroke="#E770C1"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d="M11 13H4V20H11V13Z"
+                        stroke="#E770C1"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d="M20 4H13V11H20V4Z"
+                        stroke="#E770C1"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
                   </button>
                 </div>
 
-                <div className="table-responsive rounded-3 overflow-hidden shadow-sm">
-                  <table className="table table-hover mb-0">
-                    <thead className="table-light">
-                      <tr>
-                        <th width="5%">#</th>
-                        <th width="15%">Date</th>
-                        <th width="20%">Transaction ID</th>
-                        <th width="15%">Type</th>
-                        <th width="20%">Amount</th>
-                        <th width="15%">Status</th>
-                        <th width="10%">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[
-                        {
-                          id: 1,
-                          date: "01 Jun, 2025",
-                          time: "10:45 AM",
-                          txnId: "TXN12345678",
-                          type: "Deposit",
-                          amount: "5,000.00",
-                          status: "Success",
-                          icon: "arrow-down-circle",
-                        },
-                        {
-                          id: 2,
-                          date: "03 Jun, 2025",
-                          time: "03:22 PM",
-                          txnId: "TXN12345679",
-                          type: "Withdrawal",
-                          amount: "2,000.00",
-                          status: "Pending",
-                          icon: "arrow-up-circle",
-                        },
-                        {
-                          id: 3,
-                          date: "05 Jun, 2025",
-                          time: "09:15 AM",
-                          txnId: "TXN12345680",
-                          type: "Deposit",
-                          amount: "10,000.00",
-                          status: "Success",
-                          icon: "arrow-down-circle",
-                        },
-                        {
-                          id: 4,
-                          date: "06 Jun, 2025",
-                          time: "11:30 AM",
-                          txnId: "TXN12345681",
-                          type: "Withdrawal",
-                          amount: "1,500.00",
-                          status: "Failed",
-                          icon: "arrow-up-circle",
-                        },
-                      ].map((txn, index) => (
-                        <tr key={txn.id}>
-                          <td className="">{index + 1}</td>
-                          <td>
-                            <div className="fw-medium">{txn.date}</div>
-                          </td>
-                          <td>
-                            <span className="font-monospace small">
-                              {txn.txnId}
-                            </span>
-                          </td>
-                          <td>
-                            <span
-                              className={`badge ${
-                                txn.type === "Deposit"
-                                  ? "bg-success bg-opacity-10 text-success"
-                                  : "bg-warning bg-opacity-10 text-dark"
-                              } rounded-pill`}
-                            >
-                              <i className={`bi bi-${txn.icon} me-1`}></i>
-                              {txn.type}
-                            </span>
-                          </td>
-                          <td
-                            className={`fw-semibold ${
-                              txn.type === "Deposit"
-                                ? "text-success"
-                                : "text-danger"
-                            }`}
-                          >
-                            {txn.type === "Deposit" ? "+" : "-"} ₹{txn.amount}
-                          </td>
-                          <td>
-                            <span
-                              className={`badge ${
-                                txn.status === "Success"
-                                  ? "bg-success"
-                                  : txn.status === "Pending"
-                                  ? "bg-warning text-dark"
-                                  : "bg-danger"
-                              } rounded-pill`}
-                            >
-                              {txn.status}
-                            </span>
-                          </td>
-                          <td className="text-end">
-                            {txn.status === "Failed" && (
-                              <button className="btn btn-sm btn-outline-danger">
-                                <i className="bi bi-exclamation-circle"></i>
-                              </button>
-                            )}
-                            {txn.status === "Pending" && (
-                              <button className="btn btn-sm btn-outline-warning">
-                                <i className="bi bi-clock"></i>
-                              </button>
-                            )}
-                            {txn.status === "Success" && (
-                              <button className="btn btn-sm btn-outline-success">
-                                <i className="bi bi-receipt"></i>
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                {bankAccount ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "1rem",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "48px",
+                        height: "48px",
+                        borderRadius: "50%",
+                        backgroundColor: "#f3e5ff",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#9F70FD",
+                        fontWeight: "600",
+                        fontSize: "18px",
+                      }}
+                    >
+                      {bankAccount.bankName.charAt(0)}
+                    </div>
+                    <div>
+                      <p style={{ fontWeight: "600", marginBottom: "0.25rem" }}>
+                        {bankAccount.bankName} ••••
+                        {bankAccount.accountNumber.slice(-4)}
+                      </p>
+                      <p style={{ color: "#6c757d", fontSize: "14px" }}>
+                        IFSC: {bankAccount.ifscCode}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      padding: "1.5rem",
+                      border: "1px dashed #ced4da",
+                      borderRadius: "8px",
+                      backgroundColor: "#f8f9fa",
+                    }}
+                  >
+                    <p style={{ marginBottom: "1rem", color: "#6c757d" }}>
+                      No bank account linked
+                    </p>
+                    <button
+                      onClick={() => setShowBankAccountPopup(true)}
+                      style={{
+                        padding: "8px 16px",
+                        borderRadius: "6px",
+                        border: "none",
+                        background:
+                          "linear-gradient(106deg, #E770C1 11.27%, #9F70FD 88.73%)",
+                        color: "white",
+                        fontWeight: "500",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Add Bank Account
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Security Message */}
+              <div
+                style={{
+                  backgroundColor: "#f8f9fa",
+                  borderRadius: "8px",
+                  padding: "1rem",
+                  marginBottom: "1.5rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.75rem",
+                }}
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
+                    stroke="#28a745"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M9 12L11 14L15 10"
+                    stroke="#28a745"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <div>
+                  <p style={{ fontWeight: "500", marginBottom: "0.25rem" }}>
+                    Your transactions are 100% secure
+                  </p>
+                  <p style={{ color: "#6c757d", fontSize: "14px" }}>
+                    End-to-end encrypted transactions with RBI compliant
+                    partners
+                  </p>
                 </div>
-
-                
               </div>
-            </section>
-          )}
 
-          {activeSection === "Total Investment" && (
-            <section className="flex-grow-1 shadow p-3 p-md-4 p-lg-5">
-              <h2 className="h5 fw-semibold mb-4">Your Investments</h2>
-
-              <div className="table-responsive">
-                <table className="table table-bordered shadow table-striped table-hover align-middle">
-                  <thead className="table-primary">
-                    <tr>
-                      <th>#</th>
-                      <th>Investment Plan</th>
-                      <th>Start Date</th>
-                      <th>Amount</th>
-                      <th>Return Rate</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[
-                      {
-                        id: 1,
-                        plan: "Growth Plan",
-                        startDate: "2025-04-15",
-                        amount: "₹20,000",
-                        returnRate: "8% p.a.",
-                        status: "Active",
-                      },
-                      {
-                        id: 2,
-                        plan: "Secure Return",
-                        startDate: "2025-03-01",
-                        amount: "₹10,000",
-                        returnRate: "6% p.a.",
-                        status: "Completed",
-                      },
-                      {
-                        id: 3,
-                        plan: "Monthly Income Plan",
-                        startDate: "2025-05-10",
-                        amount: "₹15,000",
-                        returnRate: "7.5% p.a.",
-                        status: "Active",
-                      },
-                    ].map((item, index) => (
-                      <tr key={item.id}>
-                        <td>{index + 1}</td>
-                        <td>{item.plan}</td>
-                        <td>{item.startDate}</td>
-                        <td>{item.amount}</td>
-                        <td>{item.returnRate}</td>
-                        <td>
-                          <span
-                            className={`badge ${
-                              item.status === "Active"
-                                ? "bg-success"
-                                : item.status === "Completed"
-                                ? "bg-secondary"
-                                : "bg-warning text-dark"
-                            }`}
-                          >
-                            {item.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              {/* Need Help Section */}
+              <div style={{ textAlign: "center" }}>
+                <p style={{ color: "#6c757d", marginBottom: "0.5rem" }}>
+                  Need help with your wallet?
+                </p>
+                <a
+                  href="/help/wallet"
+                  style={{
+                    color: "#E770C1",
+                    fontWeight: "500",
+                    textDecoration: "none",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                  }}
+                >
+                  Contact Support
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M5 12H19"
+                      stroke="#E770C1"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M12 5L19 12L12 19"
+                      stroke="#E770C1"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </a>
               </div>
+
+              {/* Add Money Popup */}
+              {showAddMoneyPopup && (
+                <Popup
+                  title="Add Money to Wallet"
+                  onClose={() => setShowAddMoneyPopup(false)}
+                >
+                  <form>
+                    <div style={{ marginBottom: "1.5rem" }}>
+                      <label
+                        style={{
+                          display: "block",
+                          marginBottom: "0.5rem",
+                          fontWeight: 500,
+                        }}
+                      >
+                        Amount (₹)
+                      </label>
+                      <input
+                        type="number"
+                        style={{
+                          width: "100%",
+                          padding: "10px",
+                          borderRadius: "8px",
+                          border: "1px solid #ced4da",
+                          fontSize: "16px",
+                        }}
+                        placeholder="Enter amount"
+                        min="1"
+                        required
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      style={{
+                        width: "100%",
+                        padding: "12px",
+                        borderRadius: "8px",
+                        border: "none",
+                        background:
+                          "linear-gradient(106deg, #E770C1 11.27%, #9F70FD 88.73%)",
+                        color: "white",
+                        fontWeight: 600,
+                        fontSize: "16px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Add Money
+                    </button>
+                  </form>
+                </Popup>
+              )}
+
+              {/* Withdraw Popup */}
+              {showWithdrawPopup && (
+                <Popup
+                  title="Withdraw Money"
+                  onClose={() => setShowWithdrawPopup(false)}
+                >
+                  <form>
+                    <div style={{ marginBottom: "1.5rem" }}>
+                      <label
+                        style={{
+                          display: "block",
+                          marginBottom: "0.5rem",
+                          fontWeight: 500,
+                        }}
+                      >
+                        Amount (₹)
+                      </label>
+                      <input
+                        type="number"
+                        style={{
+                          width: "100%",
+                          padding: "10px",
+                          borderRadius: "8px",
+                          border: "1px solid #ced4da",
+                          fontSize: "16px",
+                        }}
+                        placeholder="Enter amount to withdraw"
+                        min="1"
+                        required
+                      />
+                    </div>
+
+                    <div style={{ marginBottom: "1.5rem" }}>
+                      <label
+                        style={{
+                          display: "block",
+                          marginBottom: "0.5rem",
+                          fontWeight: 500,
+                        }}
+                      >
+                        Bank Account Details
+                      </label>
+                      <select
+                        style={{
+                          width: "100%",
+                          padding: "10px",
+                          borderRadius: "8px",
+                          border: "1px solid #ced4da",
+                          fontSize: "16px",
+                          marginBottom: "10px",
+                          appearance: "none",
+                          backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                          backgroundRepeat: "no-repeat",
+                          backgroundPosition: "right 10px center",
+                          backgroundSize: "1em",
+                        }}
+                        required
+                      >
+                        <option value="">Select Bank Account</option>
+                        {bankAccount && (
+                          <option value={bankAccount.id}>
+                            {bankAccount.bankName} (••••
+                            {bankAccount.accountNumber.slice(-4)})
+                          </option>
+                        )}
+                      </select>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowWithdrawPopup(false);
+                          setShowBankAccountPopup(true);
+                        }}
+                        style={{
+                          width: "100%",
+                          padding: "8px",
+                          borderRadius: "6px",
+                          border: "1px dashed #E770C1",
+                          background: "none",
+                          color: "#E770C1",
+                          fontWeight: "500",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "0.5rem",
+                        }}
+                      >
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M12 5V19"
+                            stroke="#E770C1"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          <path
+                            d="M5 12H19"
+                            stroke="#E770C1"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                        Add New Bank Account
+                      </button>
+                    </div>
+
+                    <button
+                      type="submit"
+                      style={{
+                        width: "100%",
+                        padding: "12px",
+                        borderRadius: "8px",
+                        border: "none",
+                        background:
+                          "linear-gradient(106deg, #E770C1 11.27%, #9F70FD 88.73%)",
+                        color: "white",
+                        fontWeight: 600,
+                        fontSize: "16px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Request Withdrawal
+                    </button>
+                  </form>
+                </Popup>
+              )}
+
+              {/* Bank Account Popup */}
+              {showBankAccountPopup && (
+                <Popup
+                  title={bankAccount ? "Edit Bank Account" : "Add Bank Account"}
+                  onClose={() => setShowBankAccountPopup(false)}
+                >
+                  <form>
+                    <div style={{ marginBottom: "1.5rem" }}>
+                      <label
+                        style={{
+                          display: "block",
+                          marginBottom: "0.5rem",
+                          fontWeight: 500,
+                        }}
+                      >
+                        Bank Name
+                      </label>
+                      <input
+                        type="text"
+                        style={{
+                          width: "100%",
+                          padding: "10px",
+                          borderRadius: "8px",
+                          border: "1px solid #ced4da",
+                          fontSize: "16px",
+                        }}
+                        placeholder="Enter bank name"
+                        defaultValue={bankAccount?.bankName || ""}
+                        required
+                      />
+                    </div>
+
+                    <div style={{ marginBottom: "1.5rem" }}>
+                      <label
+                        style={{
+                          display: "block",
+                          marginBottom: "0.5rem",
+                          fontWeight: 500,
+                        }}
+                      >
+                        Account Number
+                      </label>
+                      <input
+                        type="text"
+                        style={{
+                          width: "100%",
+                          padding: "10px",
+                          borderRadius: "8px",
+                          border: "1px solid #ced4da",
+                          fontSize: "16px",
+                        }}
+                        placeholder="Enter account number"
+                        defaultValue={bankAccount?.accountNumber || ""}
+                        required
+                      />
+                    </div>
+
+                    <div style={{ marginBottom: "1.5rem" }}>
+                      <label
+                        style={{
+                          display: "block",
+                          marginBottom: "0.5rem",
+                          fontWeight: 500,
+                        }}
+                      >
+                        IFSC Code
+                      </label>
+                      <input
+                        type="text"
+                        style={{
+                          width: "100%",
+                          padding: "10px",
+                          borderRadius: "8px",
+                          border: "1px solid #ced4da",
+                          fontSize: "16px",
+                        }}
+                        placeholder="Enter IFSC code"
+                        defaultValue={bankAccount?.ifscCode || ""}
+                        required
+                      />
+                    </div>
+
+                    <div style={{ marginBottom: "1.5rem" }}>
+                      <label
+                        style={{
+                          display: "block",
+                          marginBottom: "0.5rem",
+                          fontWeight: 500,
+                        }}
+                      >
+                        Account Holder Name
+                      </label>
+                      <input
+                        type="text"
+                        style={{
+                          width: "100%",
+                          padding: "10px",
+                          borderRadius: "8px",
+                          border: "1px solid #ced4da",
+                          fontSize: "16px",
+                        }}
+                        placeholder="Enter account holder name"
+                        defaultValue={bankAccount?.accountHolderName || ""}
+                        required
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      style={{
+                        width: "100%",
+                        padding: "12px",
+                        borderRadius: "8px",
+                        border: "none",
+                        background:
+                          "linear-gradient(106deg, #E770C1 11.27%, #9F70FD 88.73%)",
+                        color: "white",
+                        fontWeight: 600,
+                        fontSize: "16px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {bankAccount ? "Update Account" : "Add Account"}
+                    </button>
+                  </form>
+                </Popup>
+              )}
             </section>
           )}
 
           {activeSection === "Transaction" && (
-            <section className="flex-grow-1 p-3 p-md-4 p-lg-5 shadow-sm bg-white mt-4 rounded">
-              <h2 className="h5 fw-semibold mb-4">Recent Transactions</h2>
+            <section
+              style={{
+                flexGrow: 1,
+                padding: "1.5rem",
+                backgroundColor: "#fff",
+                borderRadius: "12px",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.05)",
+                marginTop: "1.5rem",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "1.5rem",
+                }}
+              >
+                <h2
+                  style={{
+                    fontSize: "1.25rem",
+                    fontWeight: 600,
+                    margin: 0,
+                    color: "#2d3748",
+                  }}
+                >
+                  Transaction History
+                </h2>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "0.5rem",
+                    background: "#f8fafc",
+                    padding: "4px",
+                    borderRadius: "8px",
+                  }}
+                >
+                  {["all", "credit", "withdraw"].map((filterType) => (
+                    <button
+                      key={filterType}
+                      onClick={() => setFilter(filterType)}
+                      style={{
+                        padding: "0.375rem 0.75rem",
+                        borderRadius: "6px",
+                        border: "none",
+                        background:
+                          filter === filterType ? "#4f46e5" : "transparent",
+                        color: filter === filterType ? "white" : "#64748b",
+                        fontWeight: 500,
+                        fontSize: "0.875rem",
+                        cursor: "pointer",
+                        transition: "all 0.2s ease",
+                        textTransform: "capitalize",
+                      }}
+                    >
+                      {filterType}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-              <div className="table-responsive">
-                <table className="table table-hover table-striped table-bordered align-middle">
-                  <thead style={{ backgroundColor: "#d1e7dd" }}>
-                    <tr>
-                      <th scope="col">#</th>
-                      <th scope="col">Date</th>
-                      <th scope="col">Transaction ID</th>
-                      <th scope="col">Type</th>
-                      <th scope="col">Amount</th>
-                      <th scope="col">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[
-                      {
-                        id: 1,
-                        date: "2025-06-01",
-                        txnId: "TXN12345678",
-                        type: "Deposit",
-                        amount: "₹5,000",
-                        status: "Success",
-                      },
-                      {
-                        id: 2,
-                        date: "2025-06-03",
-                        txnId: "TXN12345679",
-                        type: "Withdrawal",
-                        amount: "₹2,000",
-                        status: "Pending",
-                      },
-                      {
-                        id: 3,
-                        date: "2025-06-05",
-                        txnId: "TXN12345680",
-                        type: "Deposit",
-                        amount: "₹10,000",
-                        status: "Success",
-                      },
-                      {
-                        id: 4,
-                        date: "2025-06-06",
-                        txnId: "TXN12345681",
-                        type: "Withdrawal",
-                        amount: "₹1,500",
-                        status: "Failed",
-                      },
-                    ].map((txn, index) => (
-                      <tr key={txn.id}>
-                        <th scope="row">{index + 1}</th>
-                        <td>{txn.date}</td>
-                        <td>{txn.txnId}</td>
-                        <td>
-                          <span
-                            className={`badge ${
-                              txn.type === "Deposit"
-                                ? "bg-success"
-                                : "bg-warning text-dark"
-                            }`}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.75rem",
+                }}
+              >
+                {transactions
+                  .filter(
+                    (txn) =>
+                      filter === "all" ||
+                      (filter === "credit" && txn.type === "Deposit") ||
+                      (filter === "withdraw" && txn.type === "Withdrawal")
+                  )
+                  .map((txn) => (
+                    <div
+                      key={txn.id}
+                      style={{
+                        backgroundColor: "#fff",
+                        borderRadius: "10px",
+                        padding: "1rem 1.25rem",
+                        border: "1px solid #e2e8f0",
+                        transition: "all 0.2s ease",
+                        ":hover": {
+                          boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
+                          transform: "translateY(-1px)",
+                        },
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "flex-start",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "1rem",
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: "40px",
+                              height: "40px",
+                              borderRadius: "50%",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              background:
+                                txn.type === "Deposit"
+                                  ? "rgba(16, 185, 129, 0.1)"
+                                  : "rgba(245, 158, 11, 0.1)",
+                            }}
                           >
-                            {txn.type}
-                          </span>
-                        </td>
-                        <td>{txn.amount}</td>
-                        <td>
+                            {txn.type === "Deposit" ? (
+                              <svg
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path
+                                  d="M12 5V19"
+                                  stroke={
+                                    txn.status === "Failed"
+                                      ? "#ef4444"
+                                      : "#10b981"
+                                  }
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                                <path
+                                  d="M5 12H19"
+                                  stroke={
+                                    txn.status === "Failed"
+                                      ? "#ef4444"
+                                      : "#10b981"
+                                  }
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            ) : (
+                              <svg
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path
+                                  d="M5 12H19"
+                                  stroke={
+                                    txn.status === "Failed"
+                                      ? "#ef4444"
+                                      : "#f59e0b"
+                                  }
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                                <path
+                                  d="M12 5L19 12L12 19"
+                                  stroke={
+                                    txn.status === "Failed"
+                                      ? "#ef4444"
+                                      : "#f59e0b"
+                                  }
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            )}
+                          </div>
+                          <div>
+                            <p
+                              style={{
+                                margin: 0,
+                                fontWeight: 600,
+                                color: "#1e293b",
+                                fontSize: "1rem",
+                              }}
+                            >
+                              {txn.type}
+                            </p>
+                            <p
+                              style={{
+                                margin: "0.25rem 0 0",
+                                color: "#64748b",
+                                fontSize: "0.875rem",
+                              }}
+                            >
+                              {new Date(txn.date).toLocaleDateString("en-US", {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "flex-end",
+                          }}
+                        >
+                          <p
+                            style={{
+                              margin: 0,
+                              fontWeight: 600,
+                              color:
+                                txn.type === "Deposit"
+                                  ? txn.status === "Failed"
+                                    ? "#ef4444"
+                                    : "#10b981"
+                                  : txn.status === "Failed"
+                                  ? "#ef4444"
+                                  : "#f59e0b",
+                              fontSize: "1rem",
+                            }}
+                          >
+                            {txn.amount}
+                          </p>
                           <span
-                            className={`badge ${
-                              txn.status === "Success"
-                                ? "bg-success"
-                                : txn.status === "Pending"
-                                ? "bg-warning text-dark"
-                                : "bg-danger"
-                            }`}
+                            style={{
+                              marginTop: "0.5rem",
+                              padding: "0.25rem 0.5rem",
+                              borderRadius: "6px",
+                              fontSize: "0.75rem",
+                              fontWeight: 500,
+                              background:
+                                txn.status === "Success"
+                                  ? "#dcfce7"
+                                  : txn.status === "Pending"
+                                  ? "#fef9c3"
+                                  : "#fee2e2",
+                              color:
+                                txn.status === "Success"
+                                  ? "#166534"
+                                  : txn.status === "Pending"
+                                  ? "#854d0e"
+                                  : "#991b1b",
+                            }}
                           >
                             {txn.status}
                           </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
               </div>
             </section>
           )}
 
           {activeSection === "Notifications" && (
-  <section className="bg-white rounded shadow-sm mt-4 flex-grow-1 p-3 p-md-4">
-    <div className="d-flex justify-content-between align-items-center mb-4">
-      <h2 className="h5 fw-semibold mb-0">Notifications</h2>
-      
-    </div>
+            <section className="bg-white rounded-3 shadow-sm p-4">
+              <div className="d-flex justify-content-between align-items-center mb-4">
+                <h2 className="h5 fw-semibold mb-0">Notifications</h2>
+              </div>
 
-    <div className="table-responsive">
-      <table className="table table-hover table-striped table-bordered align-middle">
-        <thead className="table-light">
-          <tr>
-            <th width="5%"></th>
-            <th width="50%">Notification</th>
-            <th width="20%">Category</th>
-            <th width="15%">Time</th>
-            <th width="10%">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {[
-            {
-              id: 1,
-              message: "Your withdrawal request of ₹2,000 has been processed successfully",
-              category: "Transaction",
-              icon: "cash-coin",
-              time: "2 mins ago",
-              isRead: false,
-              type: "success"
-            },
-            {
-              id: 2,
-              message: "New investment opportunity available - Fixed Deposit @ 7.5% returns",
-              category: "Investment",
-              icon: "graph-up",
-              time: "1 hour ago",
-              isRead: false,
-              type: "info"
-            },
-            {
-              id: 3,
-              message: "Your KYC documents have been verified successfully",
-              category: "Account",
-              icon: "shield-check",
-              time: "5 hours ago",
-              isRead: true,
-              type: "success"
-            },
-            {
-              id: 4,
-              message: "Failed to process your deposit of ₹5,000. Please try again",
-              category: "Transaction",
-              icon: "exclamation-triangle",
-              time: "Yesterday",
-              isRead: true,
-              type: "warning"
-            },
-            {
-              id: 5,
-              message: "New feature added: You can now add multiple bank accounts",
-              category: "System",
-              icon: "megaphone",
-              time: "2 days ago",
-              isRead: true,
-              type: "info"
-            }
-          ].map((notification) => (
-            <tr key={notification.id} className={!notification.isRead ? "fw-semibold bg-light" : ""}>
-              <td>
-                <div className={`p-2 rounded-circle bg-${notification.type}-subtle text-${notification.type}`}>
-                  {notification.id}
-                </div>
-              </td>
-              <td>
-                <div className="d-flex align-items-center">
-                  {notification.message}
-                </div>
-              </td>
-              <td>
-                <span className="badge bg-secondary bg-opacity-10 text-secondary">
-                  {notification.category}
-                </span>
-              </td>
-              <td className="">{notification.time}</td>
-              <td>
-                <div className="d-flex gap-2">
-                  <button className="btn btn-sm btn-outline-primary">
-                    <i className="bi bi-eye"></i>
-                  </button>
-                  <button className="btn btn-sm btn-outline-danger">
-                    <i className="bi bi-trash"></i>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  </section>
-)}
+              <div className="notification-list">
+                {[
+                  {
+                    id: 1,
+                    message:
+                      "Your withdrawal request of ₹2,000 has been processed successfully",
+                    category: "Transaction",
+                    icon: "cash-coin",
+                    time: "2 mins ago",
+                    isRead: false,
+                    type: "success",
+                  },
+                  {
+                    id: 2,
+                    message:
+                      "New investment opportunity available - Fixed Deposit @ 7.5% returns",
+                    category: "Investment",
+                    icon: "graph-up",
+                    time: "1 hour ago",
+                    isRead: false,
+                    type: "info",
+                  },
+                  {
+                    id: 3,
+                    message:
+                      "Your KYC documents have been verified successfully",
+                    category: "Account",
+                    icon: "shield-check",
+                    time: "5 hours ago",
+                    isRead: true,
+                    type: "success",
+                  },
+                  {
+                    id: 4,
+                    message:
+                      "Failed to process your deposit of ₹5,000. Please try again",
+                    category: "Transaction",
+                    icon: "exclamation-triangle",
+                    time: "Yesterday",
+                    isRead: true,
+                    type: "warning",
+                  },
+                  {
+                    id: 5,
+                    message:
+                      "New feature added: You can now add multiple bank accounts",
+                    category: "System",
+                    icon: "megaphone",
+                    time: "2 days ago",
+                    isRead: true,
+                    type: "info",
+                  },
+                ].map((notification) => (
+                  <div
+                    key={notification.id}
+                    className={`notification-item p-3 mb-3 rounded-3 border-start border-4 border-${
+                      notification.type
+                    } ${!notification.isRead ? "bg-light" : "bg-white"}`}
+                  >
+                    <div className="d-flex align-items-start">
+                      <div
+                        className={`icon-circle flex-shrink-0 me-3 bg-${notification.type}-subtle text-${notification.type}`}
+                      >
+                        {iconMap[notification.icon]}
+                      </div>
+                      <div className="flex-grow-1">
+                        <div className="d-flex justify-content-between align-items-start">
+                          <p
+                            className={`mb-1 ${
+                              !notification.isRead ? "fw-semibold" : ""
+                            }`}
+                          >
+                            {notification.message}
+                          </p>
+                          <small className="text-muted">
+                            {notification.time}
+                          </small>
+                        </div>
+                        <div className="d-flex justify-content-between align-items-center mt-2">
+                          <span
+                            className={`badge bg-${notification.type}-subtle text-${notification.type}`}
+                          >
+                            {notification.category}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <style jsx>{`
+                .notification-item {
+                  transition: all 0.2s ease;
+                }
+                .notification-item:hover {
+                  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+                  transform: translateY(-1px);
+                }
+                .icon-circle {
+                  width: 40px;
+                  height: 40px;
+                  border-radius: 50%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-size: 1.1rem;
+                }
+              `}</style>
+            </section>
+          )}
 
           {activeSection === "Settings" && (
-            <>
-              <section className="bg-white p-3 p-md-4 rounded shadow-sm">
-                <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4">
-                  <h3 className="h4 mb-3 mb-md-0">Settings</h3>
-                  {!isEditing && (
-                    <button
-                      className="btn btn-primary"
-                      onClick={() => setIsEditing(true)}
-                      style={{
-                        background: "linear-gradient(106deg, #E770C1 11.27%, #9F70FD 88.73%)",
-                        borderRadius: "20px",
-                      }}
-                    >
-                      Edit Profile
-                    </button>
-                  )}
-                </div>
+  <>
+    <section style={{
+      backgroundColor: '#fff',
+      padding: '1.5rem',
+      borderRadius: '12px',
+      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+      marginBottom: '2rem'
+    }}>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '1.5rem',
+        gap: '1rem'
+      }}>
+        <h3 style={{
+          fontSize: '1.5rem',
+          fontWeight: '600',
+          color: '#2d3748',
+          margin: 0
+        }}>Settings</h3>
+        {!isEditing && (
+          <button
+            style={{
+              background: 'linear-gradient(106deg, #E770C1 11.27%, #9F70FD 88.73%)',
+              borderRadius: '20px',
+              color: 'white',
+              border: 'none',
+              padding: '0.5rem 1.5rem',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              boxShadow: '0 2px 8px rgba(151, 70, 253, 0.3)',
+              whiteSpace: 'nowrap',
+              ':hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: '0 4px 12px rgba(151, 70, 253, 0.4)'
+              }
+            }}
+            onClick={() => setIsEditing(true)}
+          >
+            Edit Profile
+          </button>
+        )}
+      </div>
 
-                <form>
-                  <div className="row">
-                    {/* First Row */}
-                    <div className="col-md-4 mb-3">
-                      <label htmlFor="firstName" className="form-label">
-                        First Name
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="firstName"
-                        value={userData.firstName || ""}
-                        onChange={handleInputChange}
-                        readOnly={!isEditing}
-                      />
-                    </div>
+      <form>
+        <div style={{ marginBottom: '1.5rem' }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+            gap: '1rem',
+            marginBottom: '1rem'
+          }}>
+            <div>
+              <label style={{
+                display: 'block',
+                marginBottom: '0.5rem',
+                fontWeight: '500',
+                color: '#4a5568'
+              }}>First Name</label>
+              <input
+                type="text"
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  borderRadius: '8px',
+                  border: `1px solid ${isEditing ? '#e2e8f0' : '#f7fafc'}`,
+                  backgroundColor: isEditing ? '#fff' : '#f8fafc',
+                  transition: 'all 0.2s ease',
+                  ':focus': {
+                    outline: 'none',
+                    borderColor: '#9F70FD',
+                    boxShadow: '0 0 0 3px rgba(159, 112, 253, 0.1)'
+                  }
+                }}
+                value={userData.firstName || ""}
+                onChange={handleInputChange}
+                readOnly={!isEditing}
+              />
+            </div>
 
-                    <div className="col-md-4 mb-3">
-                      <label htmlFor="middleName" className="form-label">
-                        Middle Name
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="middleName"
-                        value={userData.middleName || ""}
-                        readOnly={!isEditing}
-                        onChange={handleInputChange}
-                      />
-                    </div>
+            <div>
+              <label style={{
+                display: 'block',
+                marginBottom: '0.5rem',
+                fontWeight: '500',
+                color: '#4a5568'
+              }}>Middle Name</label>
+              <input
+                type="text"
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  borderRadius: '8px',
+                  border: `1px solid ${isEditing ? '#e2e8f0' : '#f7fafc'}`,
+                  backgroundColor: isEditing ? '#fff' : '#f8fafc',
+                  transition: 'all 0.2s ease'
+                }}
+                value={userData.middleName || ""}
+                readOnly={!isEditing}
+                onChange={handleInputChange}
+              />
+            </div>
 
-                    <div className="col-md-4 mb-3">
-                      <label htmlFor="lastName" className="form-label">
-                        Last Name
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="lastName"
-                        value={userData.lastName || ""}
-                        readOnly={!isEditing}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                  </div>
+            <div>
+              <label style={{
+                display: 'block',
+                marginBottom: '0.5rem',
+                fontWeight: '500',
+                color: '#4a5568'
+              }}>Last Name</label>
+              <input
+                type="text"
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  borderRadius: '8px',
+                  border: `1px solid ${isEditing ? '#e2e8f0' : '#f7fafc'}`,
+                  backgroundColor: isEditing ? '#fff' : '#f8fafc',
+                  transition: 'all 0.2s ease'
+                }}
+                value={userData.lastName || ""}
+                readOnly={!isEditing}
+                onChange={handleInputChange}
+              />
+            </div>
+          </div>
 
-                  {/* Second Row */}
-                  <div className="row">
-                    <div className="col-md-6 mb-3">
-                      <label htmlFor="userEmail" className="form-label">
-                        Email Address
-                      </label>
-                      <input
-                        type="email"
-                        className="form-control"
-                        id="userEmail"
-                        value={userData.userEmail || ""}
-                        readOnly={!isEditing}
-                        onChange={handleInputChange}
-                      />
-                    </div>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+            gap: '1rem',
+            marginBottom: '1rem'
+          }}>
+            <div>
+              <label style={{
+                display: 'block',
+                marginBottom: '0.5rem',
+                fontWeight: '500',
+                color: '#4a5568'
+              }}>Email Address</label>
+              <input
+                type="email"
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  borderRadius: '8px',
+                  border: `1px solid ${isEditing ? '#e2e8f0' : '#f7fafc'}`,
+                  backgroundColor: isEditing ? '#fff' : '#f8fafc',
+                  transition: 'all 0.2s ease'
+                }}
+                value={userData.userEmail || ""}
+                readOnly={!isEditing}
+                onChange={handleInputChange}
+              />
+            </div>
 
-                    <div className="col-md-3 mb-3">
-                      <label htmlFor="dob" className="form-label">
-                        Date of Birth
-                      </label>
-                      <input
-                        type="date"
-                        className="form-control"
-                        id="dob"
-                        value={userData.dob || ""}
-                        readOnly={!isEditing}
-                        onChange={handleInputChange}
-                      />
-                    </div>
+            <div>
+              <label style={{
+                display: 'block',
+                marginBottom: '0.5rem',
+                fontWeight: '500',
+                color: '#4a5568'
+              }}>Date of Birth</label>
+              <input
+                type="date"
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  borderRadius: '8px',
+                  border: `1px solid ${isEditing ? '#e2e8f0' : '#f7fafc'}`,
+                  backgroundColor: isEditing ? '#fff' : '#f8fafc',
+                  transition: 'all 0.2s ease',
+                  color: userData.dob ? '#1a202c' : '#a0aec0'
+                }}
+                value={userData.dob || ""}
+                readOnly={!isEditing}
+                onChange={handleInputChange}
+              />
+            </div>
 
-                    <div className="col-md-3 mb-3">
-                      <label htmlFor="gender" className="form-label">
-                        Gender
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="gender"
-                        value={userData.gender || ""}
-                        readOnly={!isEditing}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                  </div>
+            <div>
+              <label style={{
+                display: 'block',
+                marginBottom: '0.5rem',
+                fontWeight: '500',
+                color: '#4a5568'
+              }}>Gender</label>
+              {isEditing ? (
+                <select
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    borderRadius: '8px',
+                    border: '1px solid #e2e8f0',
+                    backgroundColor: '#fff',
+                    transition: 'all 0.2s ease',
+                    color: userData.gender ? '#1a202c' : '#a0aec0',
+                    cursor: 'pointer'
+                  }}
+                  value={userData.gender || ""}
+                  onChange={handleInputChange}
+                >
+                  <option value="">Select</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    borderRadius: '8px',
+                    border: '1px solid #f7fafc',
+                    backgroundColor: '#f8fafc',
+                    transition: 'all 0.2s ease'
+                  }}
+                  value={userData.gender || ""}
+                  readOnly
+                />
+              )}
+            </div>
+          </div>
 
-                  {/* Third Row - Address */}
-                  <div className="mb-3">
-                    <label htmlFor="address" className="form-label">
-                      Address
-                    </label>
-                    <textarea
-                      className="form-control"
-                      id="address"
-                      rows="3"
-                      value={userData.address || ""}
-                      readOnly={!isEditing}
-                      onChange={handleInputChange}
-                    ></textarea>
-                  </div>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{
+              display: 'block',
+              marginBottom: '0.5rem',
+              fontWeight: '500',
+              color: '#4a5568'
+            }}>Address</label>
+            <textarea
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                borderRadius: '8px',
+                border: `1px solid ${isEditing ? '#e2e8f0' : '#f7fafc'}`,
+                backgroundColor: isEditing ? '#fff' : '#f8fafc',
+                transition: 'all 0.2s ease',
+                minHeight: '100px',
+                resize: 'vertical'
+              }}
+              value={userData.address || ""}
+              readOnly={!isEditing}
+              onChange={handleInputChange}
+            ></textarea>
+          </div>
 
-                  {/* Fourth Row */}
-                  <div className="row">
-                    <div className="col-md-6 mb-3">
-                      <label htmlFor="phone" className="form-label">
-                        Phone Number
-                      </label>
-                      <input
-                        type="tel"
-                        className="form-control"
-                        id="phone"
-                        value={userData.phone || ""}
-                        readOnly={!isEditing}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                  </div>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+            gap: '1rem',
+            marginBottom: '2rem'
+          }}>
+            <div>
+              <label style={{
+                display: 'block',
+                marginBottom: '0.5rem',
+                fontWeight: '500',
+                color: '#4a5568'
+              }}>Phone Number</label>
+              <input
+                type="tel"
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  borderRadius: '8px',
+                  border: `1px solid ${isEditing ? '#e2e8f0' : '#f7fafc'}`,
+                  backgroundColor: isEditing ? '#fff' : '#f8fafc',
+                  transition: 'all 0.2s ease'
+                }}
+                value={userData.phone || ""}
+                readOnly={!isEditing}
+                onChange={handleInputChange}
+              />
+            </div>
+          </div>
+        </div>
 
-                  {/* Aadhar Card Section */}
-                  <div className="card mb-4">
-                    <div className="card-header bg-light">
-                      <h5 className="mb-0">Aadhar Card Details</h5>
-                    </div>
-                    <div className="card-body">
-                      <div className="row">
-                        <div className="col-md-6 mb-3">
-                          <label htmlFor="aadharNumber" className="form-label">
-                            Aadhar Number
-                          </label>
-                          <input
-                            type="text"
-                            className="form-control"
-                            id="aadharNumber"
-                            value={userData.aadharNumber || ""}
-                            readOnly={!isEditing}
-                            onChange={handleInputChange}
-                          />
-                        </div>
-                      </div>
+        {/* Aadhar Card Section */}
+        <div style={{
+          backgroundColor: '#f8f9fa',
+          borderRadius: '12px',
+          marginBottom: '1.5rem',
+          overflow: 'hidden',
+          border: '1px solid #e2e8f0'
+        }}>
+          <div style={{
+            backgroundColor: '#f1f5f9',
+            padding: '1rem 1.5rem',
+            borderBottom: '1px solid #e2e8f0'
+          }}>
+            <h5 style={{
+              margin: 0,
+              fontWeight: '600',
+              color: '#2d3748'
+            }}>Aadhar Card Details</h5>
+          </div>
+          <div style={{ padding: '1.5rem' }}>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+              gap: '1rem',
+              marginBottom: '1.5rem'
+            }}>
+              <div>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  fontWeight: '500',
+                  color: '#4a5568'
+                }}>Aadhar Number</label>
+                <input
+                  type="text"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    borderRadius: '8px',
+                    border: `1px solid ${isEditing ? '#e2e8f0' : '#f7fafc'}`,
+                    backgroundColor: isEditing ? '#fff' : '#f8fafc',
+                    transition: 'all 0.2s ease'
+                  }}
+                  value={userData.aadharNumber || ""}
+                  readOnly={!isEditing}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </div>
 
-                      <div className="row">
-                        <div className="col-md-6 mb-3">
-                          <label className="form-label">
-                            Aadhar Front Image
-                          </label>
-                          {userData.aadharFrontImage ? (
-                            <>
-                              <img
-                                src={userData.aadharFrontImage}
-                                alt="Aadhar Front"
-                                className="img-thumbnail w-100 mb-2"
-                                style={{ maxHeight: "200px" }}
-                              />
-                              {isEditing && (
-                                <div className="d-flex gap-2">
-                                  <input
-                                    type="file"
-                                    id="aadharFrontInput"
-                                    accept="image/*"
-                                    onChange={(e) =>
-                                      handleImageUpload(e, "aadharFrontImage")
-                                    }
-                                    className="d-none"
-                                  />
-                                  <label
-                                    htmlFor="aadharFrontInput"
-                                    className="btn btn-sm btn-outline-primary flex-grow-1"
-                                  >
-                                    Change Front
-                                  </label>
-                                  <button
-                                    type="button"
-                                    className="btn btn-sm btn-outline-danger"
-                                    onClick={() =>
-                                      handleRemoveImage("aadharFrontImage")
-                                    }
-                                  >
-                                    Remove
-                                  </button>
-                                </div>
-                              )}
-                            </>
-                          ) : (
-                            <>
-                              <div className="border rounded p-3 text-center text-muted mb-2">
-                                No image uploaded
-                              </div>
-                              {isEditing && (
-                                <>
-                                  <input
-                                    type="file"
-                                    id="aadharFrontInput"
-                                    accept="image/*"
-                                    onChange={(e) =>
-                                      handleImageUpload(e, "aadharFrontImage")
-                                    }
-                                    className="d-none"
-                                  />
-                                  <label
-                                    htmlFor="aadharFrontInput"
-                                    className="btn btn-sm btn-primary w-100"
-                                  >
-                                    Upload Front
-                                  </label>
-                                </>
-                              )}
-                            </>
-                          )}
-                        </div>
-
-                        <div className="col-md-6 mb-3">
-                          <label className="form-label">
-                            Aadhar Back Image
-                          </label>
-                          {userData.aadharBackImage ? (
-                            <>
-                              <img
-                                src={userData.aadharBackImage}
-                                alt="Aadhar Back"
-                                className="img-thumbnail w-100 mb-2"
-                                style={{ maxHeight: "200px" }}
-                              />
-                              {isEditing && (
-                                <div className="d-flex gap-2">
-                                  <input
-                                    type="file"
-                                    id="aadharBackInput"
-                                    accept="image/*"
-                                    onChange={(e) =>
-                                      handleImageUpload(e, "aadharBackImage")
-                                    }
-                                    className="d-none"
-                                  />
-                                  <label
-                                    htmlFor="aadharBackInput"
-                                    className="btn btn-sm btn-outline-primary flex-grow-1"
-                                  >
-                                    Change Back
-                                  </label>
-                                  <button
-                                    type="button"
-                                    className="btn btn-sm btn-outline-danger"
-                                    onClick={() =>
-                                      handleRemoveImage("aadharBackImage")
-                                    }
-                                  >
-                                    Remove
-                                  </button>
-                                </div>
-                              )}
-                            </>
-                          ) : (
-                            <>
-                              <div className="border rounded p-3 text-center text-muted mb-2">
-                                No image uploaded
-                              </div>
-                              {isEditing && (
-                                <>
-                                  <input
-                                    type="file"
-                                    id="aadharBackInput"
-                                    accept="image/*"
-                                    onChange={(e) =>
-                                      handleImageUpload(e, "aadharBackImage")
-                                    }
-                                    className="d-none"
-                                  />
-                                  <label
-                                    htmlFor="aadharBackInput"
-                                    className="btn btn-sm btn-primary w-100"
-                                  >
-                                    Upload Back
-                                  </label>
-                                </>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* PAN Card Section */}
-                  <div className="card mb-4">
-                    <div className="card-header bg-light">
-                      <h5 className="mb-0">PAN Card Details</h5>
-                    </div>
-                    <div className="card-body">
-                      <div className="row">
-                        <div className="col-md-6 mb-3">
-                          <label htmlFor="panNumber" className="form-label">
-                            PAN Number
-                          </label>
-                          <input
-                            type="text"
-                            className="form-control"
-                            id="panNumber"
-                            value={userData.panNumber || ""}
-                            readOnly={!isEditing}
-                            onChange={handleInputChange}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="row">
-                        <div className="col-md-6 mb-3">
-                          <label className="form-label">PAN Front Image</label>
-                          {userData.panFrontImage ? (
-                            <>
-                              <img
-                                src={userData.panFrontImage}
-                                alt="PAN Front"
-                                className="img-thumbnail w-100 mb-2"
-                                style={{ maxHeight: "200px" }}
-                              />
-                              {isEditing && (
-                                <div className="d-flex gap-2">
-                                  <input
-                                    type="file"
-                                    id="panFrontInput"
-                                    accept="image/*"
-                                    onChange={(e) =>
-                                      handleImageUpload(e, "panFrontImage")
-                                    }
-                                    className="d-none"
-                                  />
-                                  <label
-                                    htmlFor="panFrontInput"
-                                    className="btn btn-sm btn-outline-primary flex-grow-1"
-                                  >
-                                    Change Front
-                                  </label>
-                                  <button
-                                    type="button"
-                                    className="btn btn-sm btn-outline-danger"
-                                    onClick={() =>
-                                      handleRemoveImage("panFrontImage")
-                                    }
-                                  >
-                                    Remove
-                                  </button>
-                                </div>
-                              )}
-                            </>
-                          ) : (
-                            <>
-                              <div className="border rounded p-3 text-center text-muted mb-2">
-                                No image uploaded
-                              </div>
-                              {isEditing && (
-                                <>
-                                  <input
-                                    type="file"
-                                    id="panFrontInput"
-                                    accept="image/*"
-                                    onChange={(e) =>
-                                      handleImageUpload(e, "panFrontImage")
-                                    }
-                                    className="d-none"
-                                  />
-                                  <label
-                                    htmlFor="panFrontInput"
-                                    className="btn btn-sm btn-primary w-100"
-                                  >
-                                    Upload Front
-                                  </label>
-                                </>
-                              )}
-                            </>
-                          )}
-                        </div>
-
-                        <div className="col-md-6 mb-3">
-                          <label className="form-label">PAN Back Image</label>
-                          {userData.panBackImage ? (
-                            <>
-                              <img
-                                src={userData.panBackImage}
-                                alt="PAN Back"
-                                className="img-thumbnail w-100 mb-2"
-                                style={{ maxHeight: "200px" }}
-                              />
-                              {isEditing && (
-                                <div className="d-flex gap-2">
-                                  <input
-                                    type="file"
-                                    id="panBackInput"
-                                    accept="image/*"
-                                    onChange={(e) =>
-                                      handleImageUpload(e, "panBackImage")
-                                    }
-                                    className="d-none"
-                                  />
-                                  <label
-                                    htmlFor="panBackInput"
-                                    className="btn btn-sm btn-outline-primary flex-grow-1"
-                                  >
-                                    Change Back
-                                  </label>
-                                  <button
-                                    type="button"
-                                    className="btn btn-sm btn-outline-danger"
-                                    onClick={() =>
-                                      handleRemoveImage("panBackImage")
-                                    }
-                                  >
-                                    Remove
-                                  </button>
-                                </div>
-                              )}
-                            </>
-                          ) : (
-                            <>
-                              <div className="border rounded p-3 text-center text-muted mb-2">
-                                No image uploaded
-                              </div>
-                              {isEditing && (
-                                <>
-                                  <input
-                                    type="file"
-                                    id="panBackInput"
-                                    accept="image/*"
-                                    onChange={(e) =>
-                                      handleImageUpload(e, "panBackImage")
-                                    }
-                                    className="d-none"
-                                  />
-                                  <label
-                                    htmlFor="panBackInput"
-                                    className="btn btn-sm btn-primary w-100"
-                                  >
-                                    Upload Back
-                                  </label>
-                                </>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {isEditing && (
-                    <div className="d-flex justify-content-end">
-                      <button
-                        type="button"
-                        className="btn btn-primary me-2"
-                        onClick={handleSave}
-                        style={{
-                          background: "linear-gradient(106deg, #E770C1 11.27%, #9F70FD 88.73%)",
-                          
-                        }}
-                      >
-                        Save Changes
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-outline-secondary"
-                        onClick={handleCancel}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  )}
-                </form>
-              </section>
-
-              {/* New Bank Details Section */}
-              <section className="bg-white p-3 p-md-4 rounded shadow-sm">
-                <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4">
-                  <h3 className="h4 mb-3 mb-md-0">Bank Account Details</h3>
-                  {!isEditingBank && (
-                    <button
-                      className="btn btn-primary"
-                      onClick={() => setIsEditingBank(true)}
-                      style={{
-                        background: "linear-gradient(106deg, #E770C1 11.27%, #9F70FD 88.73%)",
-                      }}
-                    >
-                      {userData.bankAccounts?.length
-                        ? "Add Another Account"
-                        : "Add Bank Account"}
-                    </button>
-                  )}
-                </div>
-
-                {isEditingBank ? (
-                  <form onSubmit={handleBankSubmit}>
-                    <div className="row">
-                      <div className="col-md-6 mb-3">
-                        <label
-                          htmlFor="accountHolderName"
-                          className="form-label"
-                        >
-                          Account Holder Name
-                        </label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          id="accountHolderName"
-                          value={bankFormData.accountHolderName || ""}
-                          onChange={handleBankInputChange}
-                          required
-                        />
-                      </div>
-
-                      <div className="col-md-6 mb-3">
-                        <label htmlFor="accountNumber" className="form-label">
-                          Account Number
-                        </label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          id="accountNumber"
-                          value={bankFormData.accountNumber || ""}
-                          onChange={handleBankInputChange}
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="row">
-                      <div className="col-md-6 mb-3">
-                        <label htmlFor="bankName" className="form-label">
-                          Bank Name
-                        </label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          id="bankName"
-                          value={bankFormData.bankName || ""}
-                          onChange={handleBankInputChange}
-                          required
-                        />
-                      </div>
-
-                      <div className="col-md-6 mb-3">
-                        <label htmlFor="ifscCode" className="form-label">
-                          IFSC Code
-                        </label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          id="ifscCode"
-                          value={bankFormData.ifscCode || ""}
-                          onChange={handleBankInputChange}
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="row">
-                      <div className="col-md-6 mb-3">
-                        <label htmlFor="accountType" className="form-label">
-                          Account Type
-                        </label>
-                        <select
-                          className="form-select"
-                          id="accountType"
-                          value={bankFormData.accountType || ""}
-                          onChange={handleBankInputChange}
-                          required
-                        >
-                          <option value="">Select Account Type</option>
-                          <option value="Savings">Savings</option>
-                          <option value="Current">Current</option>
-                          <option value="Salary">Salary</option>
-                        </select>
-                      </div>
-
-                      <div className="col-md-6 mb-3">
-                        <label htmlFor="branch" className="form-label">
-                          Branch
-                        </label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          id="branch"
-                          value={bankFormData.branch || ""}
-                          onChange={handleBankInputChange}
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="mb-3">
-                      <label className="form-label">
-                        Bank Passbook/Canceled Cheque
-                      </label>
-                      {bankFormData.bankProof ? (
-                        <>
-                          <img
-                            src={bankFormData.bankProof}
-                            alt="Bank Proof"
-                            className="img-thumbnail w-100 mb-2"
-                            style={{ maxHeight: "200px" }}
-                          />
-                          <div className="d-flex gap-2">
-                            <input
-                              type="file"
-                              id="bankProofInput"
-                              accept="image/*"
-                              onChange={handleBankProofUpload}
-                              className="d-none"
-                            />
-                            <label
-                              htmlFor="bankProofInput"
-                              className="btn btn-sm btn-outline-primary flex-grow-1"
-                            >
-                              Change Document
-                            </label>
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-outline-danger"
-                              onClick={() =>
-                                setBankFormData({
-                                  ...bankFormData,
-                                  bankProof: null,
-                                })
-                              }
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="border rounded p-3 text-center text-muted mb-2">
-                            No document uploaded
-                          </div>
-                          <input
-                            type="file"
-                            id="bankProofInput"
-                            accept="image/*"
-                            onChange={handleBankProofUpload}
-                            className="d-none"
-                          />
-                          <label
-                            htmlFor="bankProofInput"
-                            className="btn btn-sm btn-primary w-100"
-                          >
-                            Upload Document
-                          </label>
-                        </>
-                      )}
-                      <div className="form-text">
-                        Upload clear image of your passbook first page or
-                        canceled cheque
-                      </div>
-                    </div>
-
-                    <div className="d-flex justify-content-end">
-                      <button type="submit" style={{ background: "linear-gradient(106deg, #E770C1 11.27%, #9F70FD 88.73%)", border: "none" }} className="btn btn-primary me-2">
-                        Save Bank Details
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-outline-secondary"
-                        onClick={() => setIsEditingBank(false)}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
-                ) : (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+              gap: '1.5rem'
+            }}>
+              <div>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  fontWeight: '500',
+                  color: '#4a5568'
+                }}>Aadhar Front Image</label>
+                {userData.aadharFrontImage ? (
                   <>
-                    {userData.bankAccounts?.length ? (
-                      <div className="table-responsive">
-                        <table className="table table-hover">
-                          <thead className="table-light">
-                            <tr>
-                              <th>Bank Name</th>
-                              <th>Account Number</th>
-                              <th>Account Type</th>
-                              <th>IFSC Code</th>
-                              <th>Primary</th>
-                              <th>Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {userData.bankAccounts.map((account, index) => (
-                              <tr key={index}>
-                                <td>
-                                  <div className="fw-medium">
-                                    {account.bankName}
-                                  </div>
-                                  <small className="text-muted">
-                                    {account.branch}
-                                  </small>
-                                </td>
-                                <td className="font-monospace">
-                                  ****{account.accountNumber.slice(-4)}
-                                </td>
-                                <td>
-                                  <span className="badge bg-info bg-opacity-10 text-info">
-                                    {account.accountType}
-                                  </span>
-                                </td>
-                                <td className="font-monospace">
-                                  {account.ifscCode}
-                                </td>
-                                <td>
-                                  {account.isPrimary ? (
-                                    <span className="badge bg-success">
-                                      Primary
-                                    </span>
-                                  ) : (
-                                    <button
-                                      className="btn btn-sm btn-outline-secondary"
-                                      onClick={() => handleSetPrimary(index)}
-                                    >
-                                      Set Primary
-                                    </button>
-                                  )}
-                                </td>
-                                <td>
-                                  <button
-                                    className="btn btn-sm btn-outline-danger me-2"
-                                    onClick={() => handleDeleteBank(index)}
-                                  >
-                                    <i className="bi bi-trash"></i>
-                                  </button>
-                                  <button
-                                    className="btn btn-sm btn-outline-primary"
-                                    onClick={() => handleEditBank(index)}
-                                  >
-                                    <i className="bi bi-pencil"></i>
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    ) : (
-                      <div className="text-center py-5 bg-light rounded">
-                        <i className="bi bi-bank fs-1 text-muted mb-3"></i>
-                        <h5 className="mb-2">No Bank Accounts Added</h5>
+                    <img
+                      src={userData.aadharFrontImage}
+                      alt="Aadhar Front"
+                      style={{
+                        width: '100%',
+                        height: '200px',
+                        objectFit: 'contain',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        marginBottom: '0.75rem',
+                        backgroundColor: '#fff'
+                      }}
+                    />
+                    {isEditing && (
+                      <div style={{
+                        display: 'flex',
+                        gap: '0.75rem'
+                      }}>
+                        <input
+                          type="file"
+                          id="aadharFrontInput"
+                          accept="image/*"
+                          onChange={(e) => handleImageUpload(e, "aadharFrontImage")}
+                          style={{ display: 'none' }}
+                        />
+                        <label
+                          htmlFor="aadharFrontInput"
+                          style={{
+                            flex: '1',
+                            padding: '0.5rem',
+                            textAlign: 'center',
+                            borderRadius: '8px',
+                            border: '1px solid #9F70FD',
+                            color: '#9F70FD',
+                            backgroundColor: 'transparent',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            ':hover': {
+                              backgroundColor: '#f3f0ff'
+                            }
+                          }}
+                        >
+                          Change Front
+                        </label>
+                        <button
+                          type="button"
+                          style={{
+                            padding: '0.5rem',
+                            borderRadius: '8px',
+                            border: '1px solid #e53e3e',
+                            color: '#e53e3e',
+                            backgroundColor: 'transparent',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            ':hover': {
+                              backgroundColor: '#fff5f5'
+                            }
+                          }}
+                          onClick={() => handleRemoveImage("aadharFrontImage")}
+                        >
+                          Remove
+                        </button>
                       </div>
                     )}
                   </>
+                ) : (
+                  <>
+                    <div style={{
+                      border: '1px dashed #e2e8f0',
+                      borderRadius: '8px',
+                      padding: '2rem',
+                      textAlign: 'center',
+                      color: '#a0aec0',
+                      marginBottom: '0.75rem',
+                      backgroundColor: '#f8fafc'
+                    }}>
+                      No image uploaded
+                    </div>
+                    {isEditing && (
+                      <>
+                        <input
+                          type="file"
+                          id="aadharFrontInput"
+                          accept="image/*"
+                          onChange={(e) => handleImageUpload(e, "aadharFrontImage")}
+                          style={{ display: 'none' }}
+                        />
+                        <label
+                          htmlFor="aadharFrontInput"
+                          style={{
+                            display: 'block',
+                            width: '100%',
+                            padding: '0.75rem',
+                            textAlign: 'center',
+                            borderRadius: '8px',
+                            backgroundColor: '#9F70FD',
+                            color: 'white',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            ':hover': {
+                              backgroundColor: '#8c5cf6'
+                            }
+                          }}
+                        >
+                          Upload Front
+                        </label>
+                      </>
+                    )}
+                  </>
                 )}
-              </section>
-            </>
-          )}
+              </div>
+
+              <div>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  fontWeight: '500',
+                  color: '#4a5568'
+                }}>Aadhar Back Image</label>
+                {userData.aadharBackImage ? (
+                  <>
+                    <img
+                      src={userData.aadharBackImage}
+                      alt="Aadhar Back"
+                      style={{
+                        width: '100%',
+                        height: '200px',
+                        objectFit: 'contain',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        marginBottom: '0.75rem',
+                        backgroundColor: '#fff'
+                      }}
+                    />
+                    {isEditing && (
+                      <div style={{
+                        display: 'flex',
+                        gap: '0.75rem'
+                      }}>
+                        <input
+                          type="file"
+                          id="aadharBackInput"
+                          accept="image/*"
+                          onChange={(e) => handleImageUpload(e, "aadharBackImage")}
+                          style={{ display: 'none' }}
+                        />
+                        <label
+                          htmlFor="aadharBackInput"
+                          style={{
+                            flex: '1',
+                            padding: '0.5rem',
+                            textAlign: 'center',
+                            borderRadius: '8px',
+                            border: '1px solid #9F70FD',
+                            color: '#9F70FD',
+                            backgroundColor: 'transparent',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            ':hover': {
+                              backgroundColor: '#f3f0ff'
+                            }
+                          }}
+                        >
+                          Change Back
+                        </label>
+                        <button
+                          type="button"
+                          style={{
+                            padding: '0.5rem',
+                            borderRadius: '8px',
+                            border: '1px solid #e53e3e',
+                            color: '#e53e3e',
+                            backgroundColor: 'transparent',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            ':hover': {
+                              backgroundColor: '#fff5f5'
+                            }
+                          }}
+                          onClick={() => handleRemoveImage("aadharBackImage")}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div style={{
+                      border: '1px dashed #e2e8f0',
+                      borderRadius: '8px',
+                      padding: '2rem',
+                      textAlign: 'center',
+                      color: '#a0aec0',
+                      marginBottom: '0.75rem',
+                      backgroundColor: '#f8fafc'
+                    }}>
+                      No image uploaded
+                    </div>
+                    {isEditing && (
+                      <>
+                        <input
+                          type="file"
+                          id="aadharBackInput"
+                          accept="image/*"
+                          onChange={(e) => handleImageUpload(e, "aadharBackImage")}
+                          style={{ display: 'none' }}
+                        />
+                        <label
+                          htmlFor="aadharBackInput"
+                          style={{
+                            display: 'block',
+                            width: '100%',
+                            padding: '0.75rem',
+                            textAlign: 'center',
+                            borderRadius: '8px',
+                            backgroundColor: '#9F70FD',
+                            color: 'white',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            ':hover': {
+                              backgroundColor: '#8c5cf6'
+                            }
+                          }}
+                        >
+                          Upload Back
+                        </label>
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* PAN Card Section */}
+        <div style={{
+          backgroundColor: '#f8f9fa',
+          borderRadius: '12px',
+          marginBottom: '1.5rem',
+          overflow: 'hidden',
+          border: '1px solid #e2e8f0'
+        }}>
+          <div style={{
+            backgroundColor: '#f1f5f9',
+            padding: '1rem 1.5rem',
+            borderBottom: '1px solid #e2e8f0'
+          }}>
+            <h5 style={{
+              margin: 0,
+              fontWeight: '600',
+              color: '#2d3748'
+            }}>PAN Card Details</h5>
+          </div>
+          <div style={{ padding: '1.5rem' }}>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+              gap: '1rem',
+              marginBottom: '1.5rem'
+            }}>
+              <div>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  fontWeight: '500',
+                  color: '#4a5568'
+                }}>PAN Number</label>
+                <input
+                  type="text"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    borderRadius: '8px',
+                    border: `1px solid ${isEditing ? '#e2e8f0' : '#f7fafc'}`,
+                    backgroundColor: isEditing ? '#fff' : '#f8fafc',
+                    transition: 'all 0.2s ease'
+                  }}
+                  value={userData.panNumber || ""}
+                  readOnly={!isEditing}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </div>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+              gap: '1.5rem'
+            }}>
+              <div>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  fontWeight: '500',
+                  color: '#4a5568'
+                }}>PAN Front Image</label>
+                {userData.panFrontImage ? (
+                  <>
+                    <img
+                      src={userData.panFrontImage}
+                      alt="PAN Front"
+                      style={{
+                        width: '100%',
+                        height: '200px',
+                        objectFit: 'contain',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        marginBottom: '0.75rem',
+                        backgroundColor: '#fff'
+                      }}
+                    />
+                    {isEditing && (
+                      <div style={{
+                        display: 'flex',
+                        gap: '0.75rem'
+                      }}>
+                        <input
+                          type="file"
+                          id="panFrontInput"
+                          accept="image/*"
+                          onChange={(e) => handleImageUpload(e, "panFrontImage")}
+                          style={{ display: 'none' }}
+                        />
+                        <label
+                          htmlFor="panFrontInput"
+                          style={{
+                            flex: '1',
+                            padding: '0.5rem',
+                            textAlign: 'center',
+                            borderRadius: '8px',
+                            border: '1px solid #9F70FD',
+                            color: '#9F70FD',
+                            backgroundColor: 'transparent',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            ':hover': {
+                              backgroundColor: '#f3f0ff'
+                            }
+                          }}
+                        >
+                          Change Front
+                        </label>
+                        <button
+                          type="button"
+                          style={{
+                            padding: '0.5rem',
+                            borderRadius: '8px',
+                            border: '1px solid #e53e3e',
+                            color: '#e53e3e',
+                            backgroundColor: 'transparent',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            ':hover': {
+                              backgroundColor: '#fff5f5'
+                            }
+                          }}
+                          onClick={() => handleRemoveImage("panFrontImage")}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div style={{
+                      border: '1px dashed #e2e8f0',
+                      borderRadius: '8px',
+                      padding: '2rem',
+                      textAlign: 'center',
+                      color: '#a0aec0',
+                      marginBottom: '0.75rem',
+                      backgroundColor: '#f8fafc'
+                    }}>
+                      No image uploaded
+                    </div>
+                    {isEditing && (
+                      <>
+                        <input
+                          type="file"
+                          id="panFrontInput"
+                          accept="image/*"
+                          onChange={(e) => handleImageUpload(e, "panFrontImage")}
+                          style={{ display: 'none' }}
+                        />
+                        <label
+                          htmlFor="panFrontInput"
+                          style={{
+                            display: 'block',
+                            width: '100%',
+                            padding: '0.75rem',
+                            textAlign: 'center',
+                            borderRadius: '8px',
+                            backgroundColor: '#9F70FD',
+                            color: 'white',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            ':hover': {
+                              backgroundColor: '#8c5cf6'
+                            }
+                          }}
+                        >
+                          Upload Front
+                        </label>
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
+
+              <div>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  fontWeight: '500',
+                  color: '#4a5568'
+                }}>PAN Back Image</label>
+                {userData.panBackImage ? (
+                  <>
+                    <img
+                      src={userData.panBackImage}
+                      alt="PAN Back"
+                      style={{
+                        width: '100%',
+                        height: '200px',
+                        objectFit: 'contain',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        marginBottom: '0.75rem',
+                        backgroundColor: '#fff'
+                      }}
+                    />
+                    {isEditing && (
+                      <div style={{
+                        display: 'flex',
+                        gap: '0.75rem'
+                      }}>
+                        <input
+                          type="file"
+                          id="panBackInput"
+                          accept="image/*"
+                          onChange={(e) => handleImageUpload(e, "panBackImage")}
+                          style={{ display: 'none' }}
+                        />
+                        <label
+                          htmlFor="panBackInput"
+                          style={{
+                            flex: '1',
+                            padding: '0.5rem',
+                            textAlign: 'center',
+                            borderRadius: '8px',
+                            border: '1px solid #9F70FD',
+                            color: '#9F70FD',
+                            backgroundColor: 'transparent',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            ':hover': {
+                              backgroundColor: '#f3f0ff'
+                            }
+                          }}
+                        >
+                          Change Back
+                        </label>
+                        <button
+                          type="button"
+                          style={{
+                            padding: '0.5rem',
+                            borderRadius: '8px',
+                            border: '1px solid #e53e3e',
+                            color: '#e53e3e',
+                            backgroundColor: 'transparent',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            ':hover': {
+                              backgroundColor: '#fff5f5'
+                            }
+                          }}
+                          onClick={() => handleRemoveImage("panBackImage")}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div style={{
+                      border: '1px dashed #e2e8f0',
+                      borderRadius: '8px',
+                      padding: '2rem',
+                      textAlign: 'center',
+                      color: '#a0aec0',
+                      marginBottom: '0.75rem',
+                      backgroundColor: '#f8fafc'
+                    }}>
+                      No image uploaded
+                    </div>
+                    {isEditing && (
+                      <>
+                        <input
+                          type="file"
+                          id="panBackInput"
+                          accept="image/*"
+                          onChange={(e) => handleImageUpload(e, "panBackImage")}
+                          style={{ display: 'none' }}
+                        />
+                        <label
+                          htmlFor="panBackInput"
+                          style={{
+                            display: 'block',
+                            width: '100%',
+                            padding: '0.75rem',
+                            textAlign: 'center',
+                            borderRadius: '8px',
+                            backgroundColor: '#9F70FD',
+                            color: 'white',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            ':hover': {
+                              backgroundColor: '#8c5cf6'
+                            }
+                          }}
+                        >
+                          Upload Back
+                        </label>
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {isEditing && (
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1rem',
+            alignItems: 'flex-end'
+          }}>
+            <div style={{
+              display: 'flex',
+              gap: '1rem',
+              justifyContent: 'flex-end'
+            }}>
+              <button
+                type="button"
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '8px',
+                  border: '1px solid #e2e8f0',
+                  backgroundColor: 'transparent',
+                  color: '#4a5568',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  ':hover': {
+                    backgroundColor: '#f7fafc'
+                  }
+                }}
+                onClick={handleCancel}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: 'linear-gradient(106deg, #E770C1 11.27%, #9F70FD 88.73%)',
+                  color: 'white',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 2px 8px rgba(151, 70, 253, 0.3)',
+                  ':hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(151, 70, 253, 0.4)'
+                  }
+                }}
+                onClick={handleSave}
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        )}
+      </form>
+    </section>
+  </>
+)}
         </main>
       </div>
     </>

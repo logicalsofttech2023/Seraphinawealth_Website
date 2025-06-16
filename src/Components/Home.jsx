@@ -7,6 +7,8 @@ import Testimonialsection from "./Pages/Testimonialsection";
 import Faqsection from "./Pages/Faqsection";
 import PopulerInvestment from "./Pages/PopulerInvestment";
 import Banner from "./Banner";
+import FeaturedPlans from "./Pages/FeaturedPlans";
+import RecommendedPlans from "./Pages/RecommendedPlans";
 const Home = () => {
   
 
@@ -59,6 +61,67 @@ const Home = () => {
         <Banner />
 
         <Categoryslider />
+
+        
+
+        <FeaturedPlans />
+
+        <section className="feature_section">
+          <div className="container">
+            <div className="row">
+              {/* Secure Retirement Block */}
+              <div className="col-xl-5 col-lg-6 col-md-12 col-sm-12">
+                <div
+                  className="feature_block_one"
+                  data-aos="fade-up"
+                  data-aos-easing="linear"
+                  data-aos-duration="500"
+                >
+                  <div className="tag_icon">
+                    <i className="icon-49" />
+                  </div>
+                  <h3>Secure Retirement</h3>
+                  <p>
+                    Want to feel more confident about your financial future? Our
+                    range of annuity strategies can help.
+                  </p>
+                  <div className="chart_box">
+                    <img
+                      src="/assets/images/resource/chart_2.png"
+                      alt="Retirement Chart"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Invest with Potential Block */}
+              <div className="col-xl-7 col-lg-6 col-md-12 col-sm-12">
+                <div
+                  className="feature_block_one"
+                  data-aos="fade-up"
+                  data-aos-easing="linear"
+                  data-aos-duration="600"
+                >
+                  <div className="tag_icon">
+                    <i className="icon-48" />
+                  </div>
+                  <h3>Invest with Potential</h3>
+                  <p>
+                    FlexGuard includes a Performance Lock feature which gives
+                    clients the flexibility to set the End Date for their
+                    future.
+                  </p>
+                  <div className="chart_box">
+                    <img
+                      src="/assets/images/resource/chart_3.png"
+                      alt="Investment Chart"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
         <section className="funfact-section">
           <div
@@ -156,63 +219,6 @@ const Home = () => {
                     <span>%</span>
                   </div>
                   <h6>Customer Satisfaction</h6>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="feature_section">
-          <div className="container">
-            <div className="row">
-              {/* Secure Retirement Block */}
-              <div className="col-xl-5 col-lg-6 col-md-12 col-sm-12">
-                <div
-                  className="feature_block_one"
-                  data-aos="fade-up"
-                  data-aos-easing="linear"
-                  data-aos-duration="500"
-                >
-                  <div className="tag_icon">
-                    <i className="icon-49" />
-                  </div>
-                  <h3>Secure Retirement</h3>
-                  <p>
-                    Want to feel more confident about your financial future? Our
-                    range of annuity strategies can help.
-                  </p>
-                  <div className="chart_box">
-                    <img
-                      src="/assets/images/resource/chart_2.png"
-                      alt="Retirement Chart"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Invest with Potential Block */}
-              <div className="col-xl-7 col-lg-6 col-md-12 col-sm-12">
-                <div
-                  className="feature_block_one"
-                  data-aos="fade-up"
-                  data-aos-easing="linear"
-                  data-aos-duration="600"
-                >
-                  <div className="tag_icon">
-                    <i className="icon-48" />
-                  </div>
-                  <h3>Invest with Potential</h3>
-                  <p>
-                    FlexGuard includes a Performance Lock feature which gives
-                    clients the flexibility to set the End Date for their
-                    future.
-                  </p>
-                  <div className="chart_box">
-                    <img
-                      src="/assets/images/resource/chart_3.png"
-                      alt="Investment Chart"
-                    />
-                  </div>
                 </div>
               </div>
             </div>
@@ -610,12 +616,16 @@ const Home = () => {
           </div>
         </section>
 
+        <RecommendedPlans />
+
         <section
           className="cta_section"
           data-aos="fade-up"
           data-aos-easing="linear"
           data-aos-duration="500"
+           style={{marginTop: "50px"}}
         >
+         
           <div className="container">
             <div className="cta_inner">
               <h3>

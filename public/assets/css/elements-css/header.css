@@ -101,12 +101,12 @@
 .main_header_inner{
     position: relative;
     display: flex;
-    padding: 30px 0px;
+    /* padding: 30px 0px; */
     align-items: center;
     justify-content: space-between;
 }
 .sticky_header .main_header_inner{
-    padding: 10px 0px;
+    /* padding: 10px 0px; */
 }
 .header_right_content{
     display: flex;

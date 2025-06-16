@@ -45,6 +45,7 @@ const App = () => {
         <Route path="/profile" element={<Profile />} />
         <Route path="/investmentplans" element={<Investmentplans />} />
 
+
       </Routes>
       {shouldHideHeaderFooter && <Footer />}
     </div>

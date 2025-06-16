@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import AOS from "aos";
 import "aos/dist/aos.css";
-
+import logo from "./logo.png"
 const Footer = () => {
   useEffect(() => {
     AOS.init({
@@ -31,11 +31,11 @@ const Footer = () => {
                     <Link to="/">
                       <img
                         style={{
-                          width: "25%",
+                          width: "50%",
                           borderRadius: "50%",
                           height: "auto",
                         }}
-                        src="/assets/images/logo.jpg"
+                        src={logo}
                         alt="Company Logo"
                       />
                     </Link>
@@ -90,7 +90,7 @@ const Footer = () => {
                 >
                   <h4 className="footer_widget_title">Primary Pages</h4>
                   <ul className="primary_page_list">
-                    <li><Link to="/services">Services</Link></li>
+                    <li><Link to="/investmentplans">Investment Plans</Link></li>
                     <li><Link to="/careers">Careers</Link></li>
                     <li><Link to="/pricing">Pricing Plans</Link></li>
                     <li><Link to="/portfolio">Portfolio</Link></li>
@@ -112,29 +112,7 @@ const Footer = () => {
                     To add complexity, this is happening against a backdrop of
                     significant challenges.
                   </p>
-                  <div className="subscribe-inner">
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        // handle subscription here
-                      }}
-                      className="subscribe-form"
-                    >
-                      <div className="form-group">
-                        <label htmlFor="email" className="visually-hidden">Email Address</label>
-                        <input
-                          type="email"
-                          name="email"
-                          id="email"
-                          placeholder="Email Address"
-                          required
-                        />
-                        <button type="submit" className="btn_style_one">
-                          Subscribe
-                        </button>
-                      </div>
-                    </form>
-                  </div>
+                  
                 </div>
               </div>
             </div>
