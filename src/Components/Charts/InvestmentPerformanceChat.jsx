@@ -1,279 +1,577 @@
-import { LineChart } from '@mui/x-charts/LineChart';
-import React, { useState } from "react";
-import { 
-  Box, 
-  Button, 
-  ButtonGroup, 
-  Dialog, 
-  DialogContent, 
-  IconButton, 
-  Paper, 
+import React, { useEffect, useState } from "react";
+import { LineChart } from "@mui/x-charts/LineChart";
+import {
+  Card,
+  CardContent,
   Typography,
+  Box,
+  Skeleton,
+  useMediaQuery,
   useTheme,
-  useMediaQuery
+  Chip,
+  Divider,
+  List,
+  ListItem,
+  ListItemText,
+  Avatar,
+  Paper,
 } from "@mui/material";
-import { Fullscreen, FullscreenExit } from "@mui/icons-material";
-
-// Custom colors based on your specifications
-const colors = {
-  primaryColor: '#6b91fc',
-  backgroundColor: '#0d0c11',
-  containerColor: '#1b1e2d',
-  textColor: '#ffffff',
-  unselectedTabColor: '#ffffff'
-};
+import axios from "axios";
+import {
+  Savings as SavingsIcon,
+  CalendarToday as CalendarIcon,
+  Paid as PaidIcon,
+  Checklist as ChecklistIcon,
+  WorkspacePremium as WorkspacePremiumIcon,
+} from "@mui/icons-material";
+import ApexCharts from "react-apexcharts";
 
 const InvestmentPerformanceChart = () => {
-  const [timeRange, setTimeRange] = useState("30days");
-  const [fullscreen, setFullscreen] = useState(false);
+  const [chartData, setChartData] = useState([]);
+  const [planData, setPlanData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const isTablet = useMediaQuery(theme.breakpoints.between("sm", "md"));
 
-  // Sample data for different time ranges
-  const data = {
-    "30days": {
-      xAxis: Array.from({ length: 30 }, (_, i) => i + 1),
-      series: Array.from({ length: 30 }, () => Math.random() * 10 - 5)
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [chartResponse, planResponse] = await Promise.all([
+          axios.get(`${import.meta.env.VITE_API_URL}getUserGrowthChart`, {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+              "Content-Type": "application/json",
+            },
+          }),
+          axios.get(`${import.meta.env.VITE_API_URL}getPlanByUserId`, {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+              "Content-Type": "application/json",
+            },
+          }),
+        ]);
+
+        if (chartResponse.status === 200) {
+          const formattedData = chartResponse.data.data.map((item, index) => ({
+            label: item.label,
+            amount: item.amount,
+            date: new Date(item.date).toLocaleDateString("en-IN", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            }),
+          }));
+          setChartData(formattedData);
+        }
+
+        if (planResponse.status === 200 && planResponse.data.plan) {
+          setPlanData(planResponse.data.plan);
+        }
+      } catch (error) {
+        console.error("Failed to fetch data:", error);
+        setError("Failed to load data. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const options = {
+    chart: {
+      type: "area",
+      zoom: { enabled: false },
+      toolbar: { show: false },
     },
-    "6months": {
-      xAxis: Array.from({ length: 6 }, (_, i) => `M${i + 1}`), // Shortened for mobile
-      series: Array.from({ length: 6 }, () => Math.random() * 20 - 10)
+    dataLabels: { enabled: false },
+    stroke: {
+      curve: "smooth",
+      width: 2,
     },
-    "1year": {
-      xAxis: Array.from({ length: 12 }, (_, i) => `M${i + 1}`),
-      series: Array.from({ length: 12 }, () => Math.random() * 30 - 15)
-    }
+    fill: {
+      type: "gradient",
+      gradient: {
+        shadeIntensity: 1,
+        opacityFrom: 0.4,
+        opacityTo: 0,
+        stops: [0, 90, 100],
+      },
+    },
+    xaxis: {
+      categories: chartData.map((d) => d.label),
+      labels: {
+        rotate: -45,
+        style: {
+          fontSize: isMobile ? "10px" : "12px",
+        },
+      },
+      title: {
+        text: "Duration Period",
+        style: {
+          fontWeight: 600,
+          color: theme.palette.mode === "dark" ? "#fff" : "#2c3e50",
+        },
+      },
+    },
+    yaxis: {
+      labels: {
+        formatter: (val) => `₹${val.toLocaleString("en-IN")}`,
+        style: {
+          fontSize: isMobile ? "10px" : "12px",
+        },
+      },
+      title: {
+        text: "Amount (₹)",
+        style: {
+          fontWeight: 600,
+          color: theme.palette.mode === "dark" ? "#fff" : "#2c3e50",
+        },
+      },
+    },
+    tooltip: {
+      y: {
+        formatter: (val) => `₹${val.toLocaleString("en-IN")}`,
+      },
+    },
+    colors: [theme.palette.mode === "dark" ? "#00C853" : "#00833D"],
+    grid: {
+      borderColor: theme.palette.mode === "dark" ? "#444" : "#e5e5e5",
+    },
   };
 
-  const currentData = data[timeRange];
+  const series = [
+    {
+      name: "Investment Value",
+      data: chartData.map((d) => d.amount),
+    },
+  ];
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  if (loading) {
+    return (
+      <div className="container-fluid p-0">
+        <div className="row g-3">
+          <div className="col-12 col-lg-12">
+            <Card
+              className="h-100"
+              style={{ borderRadius: "12px", minHeight: "400px" }}
+            >
+              <CardContent>
+                <Skeleton
+                  variant="text"
+                  width="60%"
+                  height={40}
+                  style={{ marginBottom: "16px" }}
+                />
+                <Skeleton variant="rectangular" height={300} />
+              </CardContent>
+            </Card>
+          </div>
+          <div className="col-12 col-lg-12">
+            <Card
+              className="h-100"
+              style={{ borderRadius: "12px", minHeight: "400px" }}
+            >
+              <CardContent>
+                <Skeleton
+                  variant="text"
+                  width="50%"
+                  height={40}
+                  style={{ marginBottom: "16px" }}
+                />
+                <Skeleton variant="rectangular" height={300} />
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="mt-3" style={{ borderRadius: "12px" }}>
+        <CardContent className="text-center py-4">
+          <Typography color="error" variant="h6" gutterBottom>
+            Error
+          </Typography>
+          <Typography color="error">{error}</Typography>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <Paper 
-      elevation={3} 
-      sx={{ 
-        p: 2, 
-        position: 'relative',
-        backgroundColor: colors.containerColor,
-        color: colors.textColor,
-        width: '100%',
-        overflow: 'hidden'
-      }}
-    >
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2} flexDirection={isMobile ? 'column' : 'row'}>
-        <Typography variant="h6" component="h2" sx={{ color: colors.textColor, mb: isMobile ? 1 : 0 }}>
-          Investment Performance
-        </Typography>
-        <Box display="flex" alignItems="center" mt={isMobile ? 1 : 0}>
-          <ButtonGroup 
-            size="small" 
-            sx={{ mr: isMobile ? 0 : 2 }}
-            orientation={isMobile ? "vertical" : "horizontal"}
-            fullWidth={isMobile}
-          >
-            <Button 
-              variant={timeRange === "30days" ? "contained" : "outlined"}
-              onClick={() => setTimeRange("30days")}
-              sx={{
-                backgroundColor: timeRange === "30days" ? colors.primaryColor : 'transparent',
-                color: timeRange === "30days" ? colors.textColor : colors.unselectedTabColor,
-                borderColor: colors.unselectedTabColor,
-                '&:hover': {
-                  borderColor: colors.primaryColor,
-                  color: colors.textColor
-                },
-                fontSize: isMobile ? '0.75rem' : 'inherit'
-              }}
-            >
-              {isMobile ? '30D' : 'Last 30 Days'}
-            </Button>
-            <Button 
-              variant={timeRange === "6months" ? "contained" : "outlined"}
-              onClick={() => setTimeRange("6months")}
-              sx={{
-                backgroundColor: timeRange === "6months" ? colors.primaryColor : 'transparent',
-                color: timeRange === "6months" ? colors.textColor : colors.unselectedTabColor,
-                borderColor: colors.unselectedTabColor,
-                '&:hover': {
-                  borderColor: colors.primaryColor,
-                  color: colors.textColor
-                },
-                fontSize: isMobile ? '0.75rem' : 'inherit'
-              }}
-            >
-              {isMobile ? '6M' : 'Last 6 Months'}
-            </Button>
-            <Button 
-              variant={timeRange === "1year" ? "contained" : "outlined"}
-              onClick={() => setTimeRange("1year")}
-              sx={{
-                backgroundColor: timeRange === "1year" ? colors.primaryColor : 'transparent',
-                color: timeRange === "1year" ? colors.textColor : colors.unselectedTabColor,
-                borderColor: colors.unselectedTabColor,
-                '&:hover': {
-                  borderColor: colors.primaryColor,
-                  color: colors.textColor
-                },
-                fontSize: isMobile ? '0.75rem' : 'inherit'
-              }}
-            >
-              {isMobile ? '1Y' : 'Last Year'}
-            </Button>
-          </ButtonGroup>
-          
-          {!isMobile && (
-            <IconButton 
-              onClick={() => setFullscreen(!fullscreen)}
-              sx={{ color: colors.primaryColor }}
-              aria-label={fullscreen ? "Exit fullscreen" : "View fullscreen"}
-            >
-              {fullscreen ? <FullscreenExit /> : <Fullscreen />}
-            </IconButton>
-          )}
-        </Box>
-      </Box>
-
-      <Box height={isMobile ? 250 : 300}>
-        <LineChart
-          colors={[colors.primaryColor]}
-          xAxis={[{ 
-            data: currentData.xAxis,
-            label: timeRange === "30days" ? "Day" : timeRange === "6months" ? "Month" : "Month",
-            scaleType: timeRange === "30days" ? "linear" : "band",
-            tickLabelStyle: { 
-              fill: colors.textColor,
-              fontSize: isMobile ? 10 : 12 
-            },
-            labelStyle: { 
-              fill: colors.textColor,
-              fontSize: isMobile ? 12 : 14
-            }
-          }]}
-          yAxis={[{ 
-            tickLabelStyle: { 
-              fill: colors.textColor,
-              fontSize: isMobile ? 10 : 12 
-            },
-            labelStyle: { 
-              fill: colors.textColor,
-              fontSize: isMobile ? 12 : 14
-            }
-          }]}
-          series={[
-            {
-              data: currentData.series,
-              area: true,
-              showMark: isMobile ? false : true, // Hide marks on mobile for cleaner look
-              color: colors.primaryColor,
-              baseline: "min",
-            },
-          ]}
-          height={isMobile ? 250 : 300}
-          margin={{
-            left: isMobile ? 40 : 60,
-            right: isMobile ? 20 : 40,
-            top: 20,
-            bottom: isMobile ? 40 : 60
-          }}
-          sx={{
-            '& .MuiChartsAxis-line': {
-              stroke: "#fff !important",
-            },
-            '& .MuiChartsAxis-tick': {
-              stroke: colors.unselectedTabColor,
-            },
-            '& .MuiAreaElement-root': {
-              fill: `${colors.primaryColor}30`, // Add transparency to area fill
-            },
-          }}
-        />
-      </Box>
-
-      {isMobile && (
-        <Box display="flex" justifyContent="center" mt={1}>
-          <Button 
-            variant="outlined" 
-            size="small"
-            onClick={() => setFullscreen(true)}
-            sx={{
-              color: colors.primaryColor,
-              borderColor: colors.primaryColor
+    <div className="container-fluid p-0">
+      <div className="row g-3">
+        {/* Investment Growth Chart */}
+        <div className="col-12 col-lg-12">
+          <Card
+            className="h-100 d-flex flex-column"
+            style={{
+              borderRadius: "12px",
+              background:
+                theme.palette.mode === "dark"
+                  ? "linear-gradient(135deg, #00833D, #000000)"
+                  : "#fff",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
             }}
           >
-            View Fullscreen
-          </Button>
-        </Box>
-      )}
+            <CardContent className="flex-grow-1 d-flex flex-column">
+              <div className="d-flex align-items-center mb-3">
+                <Avatar
+                  style={{
+                    background: "linear-gradient(135deg, #00833D, #000000)",
+                    marginRight: "16px",
+                    width: "40px",
+                    height: "40px",
+                  }}
+                >
+                  <SavingsIcon />
+                </Avatar>
+                <Typography
+                  variant="h5"
+                  className="mb-0"
+                  style={{
+                    fontWeight: 600,
+                    color: "#00833D",
+                  }}
+                >
+                  Investment Growth Over Time
+                </Typography>
+              </div>
 
-      <Dialog
-        open={fullscreen}
-        onClose={() => setFullscreen(false)}
-        maxWidth="lg"
-        fullWidth
-        fullScreen={isMobile}
-        PaperProps={{
-          sx: {
-            backgroundColor: colors.containerColor,
-            color: colors.textColor
-          }
-        }}
-      >
-        <DialogContent sx={{ 
-          height: isMobile ? '100%' : '80vh',
-          backgroundColor: colors.containerColor,
-        }}>
-          <Box display="flex" justifyContent="flex-end" mb={1}>
-            <IconButton 
-              onClick={() => setFullscreen(false)}
-              sx={{ color: colors.primaryColor }}
-            >
-              <FullscreenExit />
-            </IconButton>
-          </Box>
-          <LineChart
-            colors={[colors.primaryColor]}
-            xAxis={[{ 
-              data: currentData.xAxis,
-              label: timeRange === "30days" ? "Day" : timeRange === "6months" ? "Month" : "Month",
-              scaleType: timeRange === "30days" ? "linear" : "band",
-              tickLabelStyle: { fill: colors.textColor },
-              labelStyle: { fill: colors.textColor }
-            }]}
-            yAxis={[{ 
-              label: "Return (%)",
-              tickLabelStyle: { fill: colors.textColor },
-              labelStyle: { fill: colors.textColor }
-            }]}
-            series={[
-              {
-                data: currentData.series,
-                area: true,
-                showMark: true,
-                color: colors.primaryColor,
-                baseline: "min",
-              },
-            ]}
-            height={isMobile ? '70%' : 600}
-            margin={{
-              left: 60,
-              right: 40,
-              top: 20,
-              bottom: 60
+              <div
+                style={{
+                  height: isMobile ? "300px" : isTablet ? "350px" : "400px",
+                  flex: 1,
+                }}
+              >
+                {loading ? (
+                  <div className="d-flex justify-content-center align-items-center h-100">
+                    <CircularProgress />
+                  </div>
+                ) : chartData.length > 0 ? (
+                  <ApexCharts
+                    options={options}
+                    series={series}
+                    type="area"
+                    height={isMobile ? 300 : isTablet ? 350 : 400}
+                  />
+                ) : (
+                  <div className="d-flex justify-content-center align-items-center h-100">
+                    <Typography color="text.secondary">
+                      No investment data available yet.
+                    </Typography>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Plan Details */}
+        <div className="col-12 col-lg-12">
+          <Card
+            className="h-100 d-flex flex-column"
+            style={{
+              borderRadius: "12px",
+              background:
+                theme.palette.mode === "dark"
+                  ? "linear-gradient(135deg, #00833D, #000000)"
+                  : "#fff",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
             }}
-            sx={{
-              '& .MuiChartsAxis-line': {
-                stroke: colors.unselectedTabColor,
-              },
-              '& .MuiChartsAxis-tick': {
-                stroke: colors.unselectedTabColor,
-              },
-              '& .MuiAreaElement-root': {
-                fill: `${colors.primaryColor}30`, // Add transparency to area fill
-              },
-            }}
-          />
-        </DialogContent>
-      </Dialog>
-    </Paper>
+          >
+            <CardContent className="flex-grow-1 d-flex flex-column">
+              <div className="d-flex align-items-center mb-3">
+                <Avatar
+                  style={{
+                    background: "linear-gradient(135deg, #00833d, #000000)",
+                    marginRight: "16px",
+                    width: "40px",
+                    height: "40px",
+                  }}
+                >
+                  <WorkspacePremiumIcon />
+                </Avatar>
+                <Typography
+                  variant="h5"
+                  className="mb-0"
+                  style={{
+                    fontWeight: 600,
+                    color: "#00833D",
+                  }}
+                >
+                  Your Financial Plan
+                </Typography>
+              </div>
+
+              {planData ? (
+                <>
+                  <Paper
+                    elevation={0}
+                    className="mb-4 p-3"
+                    style={{
+                      backgroundColor:
+                        theme.palette.mode === "dark"
+                          ? "rgba(0,0,0,0.2)"
+                          : "rgba(0,0,0,0.03)",
+                      borderRadius: "8px",
+                    }}
+                  >
+                    <div className="row">
+                      <div className="col-6 mb-3">
+                        <div className="d-flex align-items-center">
+                          <CalendarIcon
+                            style={{
+                              marginRight: "8px",
+                              color:
+                                theme.palette.mode === "dark"
+                                  ? "#00C853"
+                                  : "#00833D",
+                            }}
+                          />
+                          <div>
+                            <Typography
+                              variant="caption"
+                              style={{
+                                color:
+                                  theme.palette.mode === "dark"
+                                    ? "rgba(255,255,255,0.7)"
+                                    : "text.secondary",
+                              }}
+                            >
+                              Start Date
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              className="d-block"
+                              style={{
+                                color:
+                                  theme.palette.mode === "dark"
+                                    ? "#fff"
+                                    : "inherit",
+                              }}
+                            >
+                              {formatDate(planData.startDate)}
+                            </Typography>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="col-6 mb-3">
+                        <div className="d-flex align-items-center">
+                          <CalendarIcon
+                            style={{
+                              marginRight: "8px",
+                              color:
+                                theme.palette.mode === "dark"
+                                  ? "#00C853"
+                                  : "#00833D",
+                            }}
+                          />
+                          <div>
+                            <Typography
+                              variant="caption"
+                              style={{
+                                color:
+                                  theme.palette.mode === "dark"
+                                    ? "rgba(255,255,255,0.7)"
+                                    : "text.secondary",
+                              }}
+                            >
+                              End Date
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              className="d-block"
+                              style={{
+                                color:
+                                  theme.palette.mode === "dark"
+                                    ? "#fff"
+                                    : "inherit",
+                              }}
+                            >
+                              {formatDate(planData.endDate)}
+                            </Typography>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="col-12 mb-2">
+                        <div className="d-flex align-items-center">
+                          <PaidIcon
+                            style={{
+                              marginRight: "8px",
+                              color:
+                                theme.palette.mode === "dark"
+                                  ? "#00C853"
+                                  : "#00833D",
+                            }}
+                          />
+                          <div>
+                            <Typography
+                              variant="caption"
+                              style={{
+                                color:
+                                  theme.palette.mode === "dark"
+                                    ? "rgba(255,255,255,0.7)"
+                                    : "text.secondary",
+                              }}
+                            >
+                              Total Plan Value
+                            </Typography>
+                            <Typography
+                              variant="h5"
+                              className="d-block"
+                              style={{
+                                color:
+                                  theme.palette.mode === "dark"
+                                    ? "#00C853"
+                                    : "#00833D",
+                              }}
+                            >
+                              {formatCurrency(planData.totalPrice)}
+                            </Typography>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-3">
+                      <Chip
+                        label={planData.status.toUpperCase()}
+                        color={
+                          planData.status === "active" ? "success" : "default"
+                        }
+                        size="small"
+                        style={{
+                          fontWeight: 600,
+                          marginRight: "8px",
+                          background:
+                            "linear-gradient(135deg, #00833d, #000000)",
+                        }}
+                      />
+                      <Chip
+                        label={planData.serviceChoice}
+                        color="info"
+                        size="small"
+                        style={{
+                          fontWeight: 600,
+                          marginRight: "8px",
+                          background:
+                            "linear-gradient(135deg, #00833d, #000000)",
+                        }}
+                      />
+                      <Chip
+                        label={planData.deliveryPreference}
+                        color="secondary"
+                        size="small"
+                        style={{
+                          fontWeight: 600,
+                          background:
+                            "linear-gradient(135deg, #00833d, #000000)",
+                        }}
+                      />
+                    </div>
+                  </Paper>
+
+                  <Typography
+                    variant="h5"
+                    className="mb-2 d-flex align-items-center"
+                    style={{
+                      fontWeight: 600,
+                      color: "#00833D",
+                    }}
+                  >
+                    <ChecklistIcon
+                      style={{
+                        marginRight: "8px",
+                        color: "#00833D",
+                      }}
+                    />
+                    Included Services
+                  </Typography>
+
+                  <List
+                    dense
+                    className="flex-grow-1"
+                    style={{
+                      maxHeight: isMobile ? "200px" : "250px",
+                      overflow: "auto",
+                      scrollbarWidth: "thin",
+                      scrollbarColor: `${
+                        theme.palette.mode === "dark"
+                          ? "#00833D #000"
+                          : "#00833D #eee"
+                      }`,
+                    }}
+                  >
+                    {planData.individualBusinessServices.map(
+                      (service, index) => (
+                        <React.Fragment key={service._id}>
+                          <ListItem className="px-0">
+                            <ListItemText
+                              primary={service.name}
+                              primaryTypographyProps={{
+                                variant: "body2",
+                                style: {
+                                  color:
+                                    theme.palette.mode === "dark"
+                                      ? "#fff"
+                                      : "inherit",
+                                },
+                              }}
+                            />
+                          </ListItem>
+                          {index <
+                            planData.individualBusinessServices.length - 1 && (
+                            <Divider
+                              component="li"
+                              style={{
+                                margin: "4px 0",
+                                backgroundColor:
+                                  theme.palette.mode === "dark"
+                                    ? "rgba(255,255,255,0.1)"
+                                    : undefined,
+                              }}
+                            />
+                          )}
+                        </React.Fragment>
+                      )
+                    )}
+                  </List>
+                </>
+              ) : (
+                <div className="d-flex justify-content-center align-items-center h-100">
+                  <Typography color="text.secondary">
+                    No active plan found.
+                  </Typography>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
   );
 };
 

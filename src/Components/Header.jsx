@@ -1,18 +1,44 @@
 import React, { useContext } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { MobileMenuContext } from "./MobileMenuContext";
-import { CgProfile } from "react-icons/cg";
 import logo from "./logo.png"; // Adjust the path as necessary
 
 const Header = () => {
   const location = useLocation();
+  const token = localStorage.getItem("token");
+  const { isMobileMenuVisible, setMobileMenuVisible } = useContext(MobileMenuContext);
 
-  const { isMobileMenuVisible, setMobileMenuVisible } =
-    useContext(MobileMenuContext);
+  // Common menu items to maintain consistency
+  const menuItems = [
+    { path: "/", label: "Home" },
+    { path: "/about", label: "About Us" },
+    { path: "/researchAnalysis", label: "Research Analysis" },
+    { path: "/agreementForm", label: "Our Services" },
+    { path: "/contact", label: "Contact Us" },
+  ];
 
   return (
     <>
       <header className="header">
+        {/* Top Small Header with Shloka */}
+        <div className="top-small-header" style={{
+          backgroundColor: "#f8f9fa",
+          padding: "5px 0",
+          textAlign: "center",
+          fontSize: "12px",
+          borderBottom: "1px solid #eee"
+        }}>
+          <div className="container">
+            <div className="sanskrit-shloka" style={{
+              fontStyle: "italic",
+              color: "#555",
+              lineHeight: "1.3"
+            }}>
+              श्रियः पतिं यज्ञपतिं यज्ञगोप्तारमीश्वरम्। यज्ञपुरुषं यज्ञेशं यज्ञवाहनं नमाम्यहम्॥
+            </div>
+          </div>
+        </div>
+
         {/* Main Header */}
         <div className="main_header">
           <div className="container">
@@ -21,10 +47,7 @@ const Header = () => {
                 <figure>
                   <Link to="/">
                     <img
-                      style={{
-                        width: "100px",
-                        height: "auto",
-                      }}
+                      style={{ width: "100px", height: "auto" }}
                       src={logo}
                       alt="Company Logo"
                     />
@@ -44,57 +67,27 @@ const Header = () => {
                 </div>
 
                 <nav className="main-menu">
-                  <div
-                    className="collapse navbar-collapse show"
-                    id="navbarSupportedContent"
-                  >
+                  <div className="collapse navbar-collapse show" id="navbarSupportedContent">
                     <ul className="navigation">
-                      <li
-                        className={
-                          location.pathname === "/"
-                            ? "dropdown active"
-                            : "dropdown"
-                        }
-                      >
-                        <Link to="/">Home</Link>
-                      </li>
-                      <li
-                        className={
-                          location.pathname === "/about" ? "active" : ""
-                        }
-                      >
-                        <Link to="/about">About Us</Link>
-                      </li>
-
-                      <li
-                        className={
-                          location.pathname === "/investmentplans"
-                            ? "active"
-                            : ""
-                        }
-                      >
-                        <Link to="/investmentplans">Investment Plans</Link>
-                      </li>
-
-                      <li
-                        className={
-                          location.pathname === "/contact" ? "active" : ""
-                        }
-                      >
-                        <Link to="/contact">Contact Us</Link>
-                      </li>
+                      {menuItems.map((item) => (
+                        <li
+                          key={item.path}
+                          className={
+                            location.pathname === item.path ? "active" : ""
+                          }
+                        >
+                          <Link to={item.path}>{item.label}</Link>
+                        </li>
+                      ))}
                     </ul>
                   </div>
                 </nav>
               </div>
 
               <div className="header_right_content">
-                <Link to={"/profile"} className="search-toggler">
-                  <CgProfile style={{ fontSize: "40px" }} />
-                </Link>
-                <div onClick={() => navigate("/login")} className="link-btn">
-                  <Link to="/login" className="btn_style_one">
-                    Get Started
+                <div className="link-btn">
+                  <Link to={token ? "/profile" : "/login"} className="btn_style_one">
+                    {token ? "Dashboard" : "Get Started"}
                   </Link>
                 </div>
               </div>
@@ -102,18 +95,18 @@ const Header = () => {
           </div>
         </div>
         {/* End Main Header */}
+        
         {/* Sticky Header*/}
+        
         <div className="sticky_header">
+          
           <div className="container">
             <div className="main_header_inner">
               <div className="main_header_logo">
                 <figure>
                   <Link to="/">
                     <img
-                      style={{
-                        width: "100px",
-                        height: "auto",
-                      }}
+                      style={{ width: "100px", height: "auto" }}
                       src={logo}
                       alt="Company Logo"
                     />
@@ -123,56 +116,27 @@ const Header = () => {
 
               <div className="main_header_menu menu_area">
                 <nav className="main-menu">
-                  <div
-                    className="collapse navbar-collapse show"
-                    id="navbarSupportedContent"
-                  >
+                  <div className="collapse navbar-collapse show" id="navbarSupportedContent">
                     <ul className="navigation">
-                      <li
-                        className={
-                          location.pathname === "/"
-                            ? "dropdown active"
-                            : "dropdown"
-                        }
-                      >
-                        <Link to="/">Home</Link>
-                      </li>
-                      <li
-                        className={
-                          location.pathname === "/about" ? "active" : ""
-                        }
-                      >
-                        <Link to="/about">About Us</Link>
-                      </li>
-                     
-                      <li
-                        className={
-                          location.pathname === "/investmentplans"
-                            ? "active"
-                            : ""
-                        }
-                      >
-                        <Link to="/investmentplans">Investment Plans</Link>
-                      </li>
-                      <li
-                        className={
-                          location.pathname === "/contact" ? "active" : ""
-                        }
-                      >
-                        <Link to="/contact">Contact Us</Link>
-                      </li>
+                      {menuItems.map((item) => (
+                        <li
+                          key={item.path}
+                          className={
+                            location.pathname === item.path ? "active" : ""
+                          }
+                        >
+                          <Link to={item.path}>{item.label}</Link>
+                        </li>
+                      ))}
                     </ul>
                   </div>
                 </nav>
               </div>
 
               <div className="header_right_content">
-                <Link to={"/profile"} className="search-toggler">
-                  <CgProfile style={{ fontSize: "40px" }} />
-                </Link>
                 <div className="link-btn">
-                  <Link to="/login" className="btn_style_one">
-                    Get Started
+                  <Link to={token ? "/profile" : "/login"} className="btn_style_one">
+                    {token ? "Dashboard" : "Get Started"}
                   </Link>
                 </div>
               </div>
@@ -180,8 +144,8 @@ const Header = () => {
           </div>
         </div>
         {/* End Sticky Header*/}
-        {/* Mobile Menu  */}
-
+        
+        {/* Mobile Menu */}
         <div className="mobile-menu">
           {isMobileMenuVisible && (
             <>
@@ -199,59 +163,44 @@ const Header = () => {
                 <div className="nav-logo">
                   <Link to="/">
                     <img
-                      style={{
-                        width: "100px",
-                        height: "auto",
-                      }}
+                      style={{ width: "100px", height: "auto" }}
                       src={logo}
                       alt="Company Logo"
                     />
                   </Link>
                 </div>
                 <div className="menu-outer">
-                  <div
-                    className="collapse navbar-collapse show"
-                    id="navbarSupportedContent"
-                  >
+                  <div className="collapse navbar-collapse show" id="navbarSupportedContent">
                     <ul className="navigation">
-                      <li className="dropdown active">
-                        <Link to="/">Home</Link>
-                      </li>
-                      <li>
-                        <Link to="/about">About Us</Link>
-                      </li>
-                      {/* <li className="dropdown">
-                        <Link to="/services">Services</Link>
-                        <ul>
-                          <li>
-                            <Link to="/services">Services</Link>
-                          </li>
-                          <li>
-                            <Link to="/services-2">Services Two</Link>
-                          </li>
-                          <li>
-                            <Link to="/services-details">Service Details</Link>
-                          </li>
-                        </ul>
-                        <div className="dropdown-btn">
-                          <i className="fa fa-angle-down" />
-                        </div>
-                      </li> */}
-
-                      <li
-                        className={
-                          location.pathname === "/investmentplans"
-                            ? "active"
-                            : ""
-                        }
-                      >
-                        <Link to="/investmentplans">Investment Plans</Link>
-                      </li>
-                      <li>
-                        <Link to="/contact">Contact Us</Link>
-                      </li>
+                      {menuItems.map((item) => (
+                        <li
+                          key={item.path}
+                          className={
+                            location.pathname === item.path ? "active" : ""
+                          }
+                        >
+                          <Link 
+                            to={item.path} 
+                            onClick={() => setMobileMenuVisible(false)}
+                          >
+                            {item.label}
+                          </Link>
+                        </li>
+                      ))}
                     </ul>
                   </div>
+                </div>
+
+                {/* Add the Dashboard/Get Started button to mobile menu */}
+                <div className="mobile-menu-btn" style={{ padding: "15px", textAlign: "center" }}>
+                  <Link 
+                    to={token ? "/profile" : "/login"} 
+                    className="btn_style_one"
+                    onClick={() => setMobileMenuVisible(false)}
+                    style={{ display: "inline-block", width: "auto" }}
+                  >
+                    {token ? "Dashboard" : "Get Started"}
+                  </Link>
                 </div>
 
                 <div className="contact-info">

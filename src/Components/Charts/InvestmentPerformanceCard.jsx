@@ -1,5 +1,5 @@
 import { LineChart } from "@mui/x-charts/LineChart";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -7,19 +7,19 @@ import {
   Typography,
   Card,
   CardContent,
-  Grid,
   Stack,
-  Divider,
+  CircularProgress,
 } from "@mui/material";
 import { ArrowUpward, ArrowDownward } from "@mui/icons-material";
+import axios from "axios";
 
 // Updated color scheme for better visibility
 const colors = {
   primaryColor: "#6b91fc",
   backgroundColor: "#0d0c11",
-  containerColor: "#1b1e2d",
+  containerColor: "linear-gradient(135deg, #00833D, #000000)",
   textPrimary: "#ffffff",
-  textSecondary: "#ffffff", // Brighter than before for better readability
+  textSecondary: "#ffffff",
   unselectedTabColor: "#a0a1a6",
   profitColor: "#4caf50",
   lossColor: "#f44336",
@@ -28,42 +28,139 @@ const colors = {
 
 const InvestmentPerformanceCard = () => {
   const [timeRange, setTimeRange] = useState("30days");
+  const [portfolioData, setPortfolioData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Sample data
-  const portfolioData = {
-    currentValue: 12500,
-    totalInvestment: 10000,
-    profitPercent: 25,
-    profitAmount: 2500,
-    graphData: {
-      "30days": Array.from(
-        { length: 30 },
-        (_, i) => Math.random() * 500 + 12000
-      ),
-      "6months": Array.from(
-        { length: 6 },
-        (_, i) => Math.random() * 2000 + 10500
-      ),
-      "1year": Array.from(
-        { length: 12 },
-        (_, i) => Math.random() * 3000 + 9500
-      ),
-    },
-    xAxis: {
-      "30days": Array.from({ length: 30 }, (_, i) => i + 1),
-      "6months": Array.from({ length: 6 }, (_, i) => `M${i + 1}`),
-      "1year": Array.from({ length: 12 }, (_, i) => `M${i + 1}`),
-    },
+  useEffect(() => {
+    const fetchPerformanceData = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_URL}getInvestmentPerformance`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+
+        const apiData = response.data.data;
+        
+        // Transform API data to match our component structure
+        const transformedData = {
+          currentValue: apiData.currentValue,
+          totalInvestment: apiData.totalInvestment,
+          profitPercent: apiData.profitPercent,
+          profitAmount: apiData.profitAmount,
+          graphData: {
+            "30days": apiData.graphData,
+            "6months": Array.from(
+              { length: 6 },
+              (_, i) => apiData.currentValue * (0.95 + Math.random() * 0.1)
+            ),
+            "1year": Array.from(
+              { length: 12 },
+              (_, i) => apiData.currentValue * (0.9 + Math.random() * 0.2)
+            ),
+          },
+          xAxis: {
+            "30days": apiData.xAxis,
+            "6months": getMonthNames(6),
+            "1year": getMonthNames(12),
+          },
+        };
+
+        setPortfolioData(transformedData);
+        setLoading(false);
+      } catch (err) {
+        setError(err.message || "Failed to fetch performance data");
+        setLoading(false);
+      }
+    };
+
+    fetchPerformanceData();
+  }, []);
+
+  // Function to get month names
+  const getMonthNames = (count) => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
+    
+    return Array.from({ length: count }, (_, i) => {
+      const monthsBack = count - 1 - i;
+      const date = new Date(currentYear, currentMonth - monthsBack, 1);
+      
+      const monthIndex = date.getMonth();
+      const year = date.getFullYear();
+      return `${months[monthIndex]} '${year.toString().slice(-2)}`;
+    }).reverse();
   };
+
+  if (loading) {
+    return (
+      <Card
+        sx={{
+          background: colors.containerColor,
+          color: colors.textPrimary,
+          borderRadius: "12px",
+          minHeight: "400px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <CircularProgress sx={{ color: colors.textPrimary }} />
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card
+        sx={{
+          background: colors.containerColor,
+          color: colors.textPrimary,
+          borderRadius: "12px",
+          minHeight: "400px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Typography color="error">{error}</Typography>
+      </Card>
+    );
+  }
+
+  if (!portfolioData) {
+    return (
+      <Card
+        sx={{
+          background: colors.containerColor,
+          color: colors.textPrimary,
+          borderRadius: "12px",
+          minHeight: "400px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Typography>No performance data available</Typography>
+      </Card>
+    );
+  }
 
   const isProfit = portfolioData.profitPercent >= 0;
   const currentGraphData = portfolioData.graphData[timeRange];
   const currentXAxis = portfolioData.xAxis[timeRange];
 
   return (
-     <Card
+    <Card
       sx={{
-        backgroundColor: colors.containerColor,
+        background: colors.containerColor,
         color: colors.textPrimary,
         borderRadius: "12px",
       }}
@@ -73,7 +170,13 @@ const InvestmentPerformanceCard = () => {
           {/* Stats Section */}
           <div className="col-md-6 col-12 mb-4">
             <Stack spacing={3} height="100%">
-              <Typography variant="h5" color={colors.textPrimary} fontWeight="bold">
+              <Typography
+                variant="h5"
+                sx={{
+                  color: `${colors.textPrimary} !important`,
+                  fontWeight: `bold !important`,
+                }}
+              >
                 Portfolio Summary
               </Typography>
 
@@ -81,8 +184,12 @@ const InvestmentPerformanceCard = () => {
                 <Typography variant="body2" color={colors.textSecondary}>
                   Current Value
                 </Typography>
-                <Typography variant="h4" color={colors.textPrimary} fontWeight="bold">
-                  ${portfolioData.currentValue.toLocaleString()}
+                <Typography
+                  variant="h4"
+                  color={colors.textPrimary}
+                  fontWeight="bold"
+                >
+                  ₹{portfolioData.currentValue.toLocaleString()}
                 </Typography>
               </Box>
 
@@ -91,7 +198,7 @@ const InvestmentPerformanceCard = () => {
                   Total Investment
                 </Typography>
                 <Typography variant="h6" color={colors.textPrimary}>
-                  ${portfolioData.totalInvestment.toLocaleString()}
+                  ₹{portfolioData.totalInvestment.toLocaleString()}
                 </Typography>
               </Box>
 
@@ -114,7 +221,7 @@ const InvestmentPerformanceCard = () => {
                     <ArrowDownward sx={{ color: colors.lossColor }} />
                   )}
                   <Typography variant="body1" color={colors.textPrimary}>
-                    (${Math.abs(portfolioData.profitAmount).toLocaleString()})
+                    (₹{Math.abs(portfolioData.profitAmount).toLocaleString()})
                   </Typography>
                 </Box>
               </Box>
@@ -130,6 +237,10 @@ const InvestmentPerformanceCard = () => {
                     {
                       data: currentXAxis,
                       scaleType: timeRange === "30days" ? "linear" : "band",
+                      tickLabelStyle: {
+                        fill: colors.textPrimary,
+                        fontSize: 10,
+                      },
                     },
                   ]}
                   series={[
@@ -140,7 +251,7 @@ const InvestmentPerformanceCard = () => {
                     },
                   ]}
                   height={200}
-                  margin={{ top: 20, bottom: 20 }}
+                  margin={{ top: 20, bottom: 30 }}
                   sx={{
                     "& .MuiChartsAxis-line, .MuiChartsAxis-tick": {
                       stroke: "#fff !important",
@@ -210,7 +321,7 @@ const InvestmentPerformanceCard = () => {
         </div>
       </CardContent>
     </Card>
-);
+  );
 };
 
 export default InvestmentPerformanceCard;

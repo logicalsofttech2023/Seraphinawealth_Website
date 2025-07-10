@@ -1,45 +1,28 @@
 import React, { useState, useEffect } from "react";
 import AOS from "aos";
 import "aos/dist/aos.css";
-
-const faqs = [
-  {
-    id: 1,
-    question: "How To Cancel Chase Card?",
-    answer:
-      "Lorem ipsum dolor sit amet consectetur. Ut parturient at volutpat dolor nunc cursus at rhoncus. Quis sit id tempus aliquam. Mauris felis purus morbi facilisis. Ullamcorper id consectetur ultricies nunc nunc enim accumsan porttitor.",
-  },
-  {
-    id: 2,
-    question: "What is GlobalWebPay Alternative?",
-    answer:
-      "Lorem ipsum dolor sit amet consectetur. Ut parturient at volutpat dolor nunc cursus at rhoncus. Quis sit id tempus aliquam. Mauris felis purus morbi facilisis. Ullamcorper id consectetur ultricies nunc nunc enim accumsan porttitor.",
-  },
-  {
-    id: 3,
-    question: "What are BIC and SWIFT codes?",
-    answer:
-      "Lorem ipsum dolor sit amet consectetur. Ut parturient at volutpat dolor nunc cursus at rhoncus. Quis sit id tempus aliquam. Mauris felis purus morbi facilisis. Ullamcorper id consectetur ultricies nunc nunc enim accumsan porttitor.",
-  },
-  {
-    id: 4,
-    question: "Explaining what Britain's exit from the EU means?",
-    answer:
-      "Lorem ipsum dolor sit amet consectetur. Ut parturient at volutpat dolor nunc cursus at rhoncus. Quis sit id tempus aliquam. Mauris felis purus morbi facilisis. Ullamcorper id consectetur ultricies nunc nunc enim accumsan porttitor.",
-  },
-  {
-    id: 5,
-    question: "What is Gross Domestic Product or GDP?",
-    answer:
-      "Lorem ipsum dolor sit amet consectetur. Ut parturient at volutpat dolor nunc cursus at rhoncus. Quis sit id tempus aliquam. Mauris felis purus morbi facilisis. Ullamcorper id consectetur ultricies nunc nunc enim accumsan porttitor.",
-  },
-];
+import axios from "axios";
 
 const Faqsection = () => {
-  const [activeId, setActiveId] = useState(5); 
+  const [faqs, setFaqs] = useState([]);
+  const [activeId, setActiveId] = useState(null);
 
   useEffect(() => {
     AOS.init({ once: true });
+
+    // Fetch FAQs from API
+    const fetchFaqs = async () => {
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}getAllFAQsInUser`);
+        if (response.data?.faqs) {
+          setFaqs(response.data.faqs.filter(faq => faq.isActive));
+        }
+      } catch (error) {
+        console.error("Failed to fetch FAQs:", error);
+      }
+    };
+
+    fetchFaqs();
   }, []);
 
   const toggleAccordion = (id) => {
@@ -62,16 +45,16 @@ const Faqsection = () => {
         </div>
         <div className="inner_box">
           <ul className="accordion_box">
-            {faqs.map(({ id, question, answer }) => {
-              const isActive = id === activeId;
+            {faqs.map((faq, index) => {
+              const isActive = faq._id === activeId;
               return (
                 <li
-                  key={id}
+                  key={faq._id}
                   className={`accordion block ${isActive ? "active-block" : ""}`}
                 >
                   <div
                     className={`acc-btn ${isActive ? "active" : ""}`}
-                    onClick={() => toggleAccordion(id)}
+                    onClick={() => toggleAccordion(faq._id)}
                     style={{
                       cursor: "pointer",
                       display: "flex",
@@ -80,9 +63,8 @@ const Faqsection = () => {
                     }}
                   >
                     <h4 style={{ margin: 0 }}>
-                      {id}.&nbsp;&nbsp;{question}
+                      {index + 1}.&nbsp;&nbsp;{faq.question}
                     </h4>
-                    {/* Plus/Minus icon */}
                     <span
                       style={{
                         fontSize: "24px",
@@ -99,7 +81,7 @@ const Faqsection = () => {
                     style={{ display: isActive ? "block" : "none" }}
                   >
                     <div className="text">
-                      <p>{answer}</p>
+                      <p>{faq.answer}</p>
                     </div>
                   </div>
                 </li>

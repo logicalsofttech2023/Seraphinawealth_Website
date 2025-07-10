@@ -5,7 +5,7 @@ const ActivePlanSnapshot = () => {
   const colors = {
     primaryColor: "#6b91fc",
     backgroundColor: "#fff",
-    containerColor: "#1b1e2d",
+    containerColor: "linear-gradient(135deg, #00833D, #000000)",
     textPrimary: "#ffffff",
     textSecondary: "rgba(255, 255, 255, 0.7)",
     unselectedTabColor: "#a0a1a6",
@@ -40,9 +40,10 @@ const ActivePlanSnapshot = () => {
       style={{
         padding: "0px",
         maxWidth: "1200px",
-        margin: "0 auto",
+        margin: "30px auto",
         backgroundColor: colors.backgroundColor,
         color: colors.textPrimary,
+        
       }}
     >
       <Typography
@@ -70,11 +71,11 @@ const ActivePlanSnapshot = () => {
                   borderRadius: "12px",
                   boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
                   borderLeft: `4px solid ${plan.accentColor}`,
-                  backgroundColor: colors.containerColor,
+                  background: "linear-gradient(135deg, #00833D, #000000) !important",
                   height: "100%",
                 }}
               >
-                <CardContent style={{ padding: "20px" }}>
+                <CardContent style={{ padding: "20px", background: 'linear-gradient(135deg, rgb(0, 131, 61), rgb(0, 0, 0))' }}>
                   <Typography
                     variant="h6"
                     style={{
@@ -102,7 +103,7 @@ const ActivePlanSnapshot = () => {
                       <Typography variant="body2" style={{ color: colors.textSecondary, marginBottom: "4px", fontSize: "0.8rem" }}>
                         Invested Amount
                       </Typography>
-                      <Typography variant="body1" style={{ fontWeight: 500 }}>
+                      <Typography variant="body1" style={{ fontWeight: 500, color: colors.textPrimary }}>
                         ₹{plan.invested.toLocaleString()}
                       </Typography>
                     </div>
@@ -128,7 +129,7 @@ const ActivePlanSnapshot = () => {
                       <Typography variant="body2" style={{ color: colors.textSecondary, marginBottom: "4px", fontSize: "0.8rem" }}>
                         Start Date
                       </Typography>
-                      <Typography variant="body1" style={{ fontWeight: 500 }}>
+                      <Typography variant="body1" style={{ fontWeight: 500, color: colors.textPrimary }}>
                         {plan.startDate}
                       </Typography>
                     </div>
@@ -136,7 +137,7 @@ const ActivePlanSnapshot = () => {
                       <Typography variant="body2" style={{ color: colors.textSecondary, marginBottom: "4px", fontSize: "0.8rem" }}>
                         Maturity Date
                       </Typography>
-                      <Typography variant="body1" style={{ fontWeight: 500 }}>
+                      <Typography variant="body1" style={{ fontWeight: 500, color: colors.textPrimary }}>
                         {plan.maturityDate}
                       </Typography>
                     </div>

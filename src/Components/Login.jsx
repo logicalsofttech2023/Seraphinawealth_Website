@@ -1,10 +1,15 @@
 import React, { useState, useRef, useEffect } from "react";
-import "./Login.css"
-import {Link} from "react-router-dom"
+import "./Login.css";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
+import Swal from "sweetalert2";
+
 const Login = () => {
+  const Navigate = useNavigate();
   const [step, setStep] = useState(1); // 1: Mobile input, 2: OTP verification, 3: Registration
   const [mobileNumber, setMobileNumber] = useState("");
   const [otp, setOtp] = useState("");
+  const [generateOtp, setGenerateOtp] = useState();
   const [formData, setFormData] = useState({
     firstName: "",
     middleName: "",
@@ -23,25 +28,8 @@ const Login = () => {
     panBack: null,
     profileImage: null,
   });
-
-  const [errors, setErrors] = useState({
-    mobileNumber: "",
-    otp: "",
-    firstName: "",
-    lastName: "",
-    email: "",
-    dob: "",
-    gender: "",
-    address: "",
-    aadharNumber: "",
-    panNumber: "",
-    aadharFront: "",
-    aadharBack: "",
-    panFront: "",
-    panBack: "",
-    profileImage: "",
-  });
-
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
   const [previewImages, setPreviewImages] = useState({
     profileImage: null,
     aadharFront: null,
@@ -49,151 +37,174 @@ const Login = () => {
     panFront: null,
     panBack: null,
   });
-
   const aadharFrontRef = useRef();
   const aadharBackRef = useRef();
   const panFrontRef = useRef();
   const panBackRef = useRef();
   const profileImageRef = useRef();
+  const token = localStorage.getItem("token");
 
-  const validateMobile = () => {
-    const isValid = /^[0-9]{10}$/.test(mobileNumber);
-    setErrors(prev => ({
-      ...prev,
-      mobileNumber: isValid ? "" : "Please enter a valid 10-digit mobile number"
-    }));
-    return isValid;
-  };
-
-  const validateOTP = () => {
-    const isValid = /^[0-9]{6}$/.test(otp);
-    setErrors(prev => ({
-      ...prev,
-      otp: isValid ? "" : "Please enter a valid 6-digit OTP"
-    }));
-    return isValid;
-  };
-
-  const validateStep3 = () => {
-    let isValid = true;
-    const newErrors = {...errors};
-
-    // Validate required fields
-    if (!formData.firstName.trim()) {
-      newErrors.firstName = "First name is required";
-      isValid = false;
-    } else {
-      newErrors.firstName = "";
+  useEffect(() => {
+    if (token) {
+      Navigate("/");
     }
+  }, []);
 
-    if (!formData.lastName.trim()) {
-      newErrors.lastName = "Last name is required";
-      isValid = false;
-    } else {
-      newErrors.lastName = "";
-    }
-
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
-      isValid = false;
-    } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
-      newErrors.email = "Please enter a valid email";
-      isValid = false;
-    } else {
-      newErrors.email = "";
-    }
-
-    if (!formData.dob) {
-      newErrors.dob = "Date of birth is required";
-      isValid = false;
-    } else {
-      newErrors.dob = "";
-    }
-
-    if (!formData.gender) {
-      newErrors.gender = "Gender is required";
-      isValid = false;
-    } else {
-      newErrors.gender = "";
-    }
-
-    if (!formData.address.trim()) {
-      newErrors.address = "Address is required";
-      isValid = false;
-    } else {
-      newErrors.address = "";
-    }
-
-    if (!formData.aadharNumber.trim()) {
-      newErrors.aadharNumber = "Aadhar number is required";
-      isValid = false;
-    } else if (!/^[0-9]{12}$/.test(formData.aadharNumber)) {
-      newErrors.aadharNumber = "Please enter a valid 12-digit Aadhar number";
-      isValid = false;
-    } else {
-      newErrors.aadharNumber = "";
-    }
-
-    if (!formData.panNumber.trim()) {
-      newErrors.panNumber = "PAN number is required";
-      isValid = false;
-    } else if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) {
-      newErrors.panNumber = "Please enter a valid PAN number";
-      isValid = false;
-    } else {
-      newErrors.panNumber = "";
-    }
-
-    if (!formData.profileImage) {
-      newErrors.profileImage = "Profile image is required";
-      isValid = false;
-    } else {
-      newErrors.profileImage = "";
-    }
-
-    if (!formData.aadharFront) {
-      newErrors.aadharFront = "Aadhar front image is required";
-      isValid = false;
-    } else {
-      newErrors.aadharFront = "";
-    }
-
-    if (!formData.aadharBack) {
-      newErrors.aadharBack = "Aadhar back image is required";
-      isValid = false;
-    } else {
-      newErrors.aadharBack = "";
-    }
-
-    if (!formData.panFront) {
-      newErrors.panFront = "PAN front image is required";
-      isValid = false;
-    } else {
-      newErrors.panFront = "";
-    }
-
-    if (!formData.panBack) {
-      newErrors.panBack = "PAN back image is required";
-      isValid = false;
-    } else {
-      newErrors.panBack = "";
-    }
-
-    setErrors(newErrors);
-    return isValid;
-  };
-
-  const handleMobileSubmit = (e) => {
+  const handleMobileSubmit = async (e) => {
     e.preventDefault();
-    if (validateMobile()) {
-      setStep(2);
+    setLoading(true);
+
+    // Validate mobile number
+    if (!mobileNumber) {
+      setErrors({ mobileNumber: "Mobile number is required" });
+      setLoading(false);
+      return;
+    }
+
+    if (!/^\d{10}$/.test(mobileNumber)) {
+      setErrors({
+        mobileNumber: "Please enter a valid 10-digit mobile number",
+      });
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // Call generate OTP API
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}generateOtp`,
+        {
+          phone: mobileNumber,
+        }
+      );
+
+      if (response.status === 200) {
+        setStep(2);
+        Swal.fire({
+          icon: "success",
+          title: "OTP Sent!",
+          text: "OTP has been sent to your mobile number",
+          confirmButtonText: "OK",
+          showConfirmButton: true,
+        });
+        setGenerateOtp(response.data.otp);
+      } else {
+        throw new Error(response.data.message || "Failed to send OTP");
+      }
+    } catch (error) {
+      console.error("Error sending OTP:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text:
+          error.response?.data?.message ||
+          "Failed to send OTP. Please try again.",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleOtpSubmit = (e) => {
+  // Handle OTP verification (Step 2)
+  const handleOtpSubmit = async (e) => {
     e.preventDefault();
-    if (validateOTP()) {
-      setStep(3);
+    setLoading(true);
+
+    // Validate OTP
+    if (!otp || otp.length !== 6) {
+      setErrors({ otp: "Please enter a valid 6-digit OTP" });
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // Step 1: Verify OTP
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}verifyOtp`,
+        {
+          phone: mobileNumber,
+          otp: otp,
+        }
+      );
+
+      if (response.status === 200) {
+        const { userExit, token } = response.data;
+
+        // If everything is fine
+        localStorage.setItem("token", token);
+
+        if (userExit) {
+          Navigate(`/agreementForm`);
+        } else {
+          setStep(3);
+        }
+      } else {
+        throw new Error(response.data.message || "OTP verification failed");
+      }
+    } catch (error) {
+      console.error("Error verifying OTP:", error);
+      const errMsg = error.response?.data?.message || "";
+
+      if (
+        errMsg === "Your account is not verified by admin yet." &&
+        error.response?.data?.userExit
+      ) {
+        Swal.fire({
+          icon: "info",
+          title: "Pending Approval",
+          text: "Your profile is under review. Once approved by the admin, you will receive an email. After that, you can log in.",
+        });
+        Navigate("/");
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: errMsg || "Invalid OTP. Please try again.",
+        });
+      }
+
+      setOtp("");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle resend OTP
+  const handleResendOtp = async () => {
+    setLoading(true);
+
+    try {
+      // Call resend OTP API
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}resendOtp`,
+        {
+          phone: mobileNumber,
+        }
+      );
+
+      if (response.status === 200) {
+        Swal.fire({
+          icon: "success",
+          title: "OTP Resent!",
+          text: "A new OTP has been sent to your mobile number",
+          timer: 2000,
+          showConfirmButton: false,
+        });
+        setGenerateOtp(response.data.data);
+      } else {
+        throw new Error(response.data.message || "Failed to resend OTP");
+      }
+    } catch (error) {
+      console.error("Error resending OTP:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text:
+          error.response?.data?.message ||
+          "Failed to resend OTP. Please try again.",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -203,12 +214,12 @@ const Login = () => {
       ...prev,
       [name]: value,
     }));
-    
+
     // Clear error when user starts typing
     if (errors[name]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [name]: ""
+        [name]: "",
       }));
     }
   };
@@ -223,9 +234,9 @@ const Login = () => {
 
       // Clear error when file is selected
       if (errors[fieldName]) {
-        setErrors(prev => ({
+        setErrors((prev) => ({
           ...prev,
-          [fieldName]: ""
+          [fieldName]: "",
         }));
       }
 
@@ -241,12 +252,143 @@ const Login = () => {
     }
   };
 
-  const handleRegisterSubmit = (e) => {
+  // Validate registration form
+  const validateRegistrationForm = () => {
+    const newErrors = {};
+
+    if (!formData.firstName) newErrors.firstName = "First name is required";
+    if (!formData.lastName) newErrors.lastName = "Last name is required";
+
+    if (!formData.email) {
+      newErrors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "Please enter a valid email";
+    }
+
+    if (!formData.dob) newErrors.dob = "Date of birth is required";
+    if (!formData.gender) newErrors.gender = "Gender is required";
+    if (!formData.address) newErrors.address = "Address is required";
+
+    if (!formData.aadharNumber) {
+      newErrors.aadharNumber = "Aadhar number is required";
+    } else if (!/^\d{12}$/.test(formData.aadharNumber)) {
+      newErrors.aadharNumber = "Please enter a valid 12-digit Aadhar number";
+    }
+
+    if (!formData.panNumber) {
+      newErrors.panNumber = "PAN number is required";
+    }
+
+    if (!formData.profileImage)
+      newErrors.profileImage = "Profile image is required";
+    if (!formData.aadharFront)
+      newErrors.aadharFront = "Aadhar front image is required";
+    if (!formData.aadharBack)
+      newErrors.aadharBack = "Aadhar back image is required";
+    if (!formData.panFront) newErrors.panFront = "PAN front image is required";
+    if (!formData.panBack) newErrors.panBack = "PAN back image is required";
+
+    setErrors(newErrors);
+
+    // If there are errors, scroll to the first one
+    if (Object.keys(newErrors).length > 0) {
+      const firstErrorField = Object.keys(newErrors)[0];
+      const element = document.querySelector(`[name="${firstErrorField}"]`);
+      if (element) {
+        element.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+        element.focus();
+      }
+      return false;
+    }
+
+    return true;
+  };
+
+  // Handle registration submission (Step 3)
+  const handleRegisterSubmit = async (e) => {
     e.preventDefault();
-    if (validateStep3()) {
-      // Here you would typically submit all the form data including files
-      console.log("Form data:", formData);
-      alert("Registration successful! Documents uploaded.");
+    setLoading(true);
+
+    // Validate form
+    if (!validateRegistrationForm()) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // Prepare form data
+      const formDataToSend = new FormData();
+      formDataToSend.append("firstName", formData.firstName);
+      formDataToSend.append("middleName", formData.middleName);
+      formDataToSend.append("lastName", formData.lastName);
+      formDataToSend.append("userEmail", formData.email);
+      formDataToSend.append("dob", formData.dob);
+      formDataToSend.append("gender", formData.gender);
+      formDataToSend.append("address", formData.address);
+      formDataToSend.append("phone", mobileNumber);
+      formDataToSend.append("aadharNumber", formData.aadharNumber);
+      formDataToSend.append("panNumber", formData.panNumber);
+      formDataToSend.append("profileImage", formData.profileImage);
+      formDataToSend.append("aadharFrontImage", formData.aadharFront);
+      formDataToSend.append("aadharBackImage", formData.aadharBack);
+      formDataToSend.append("panFrontImage", formData.panFront);
+      formDataToSend.append("panBackImage", formData.panBack);
+
+      // Call complete registration API
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}completeRegistration`,
+        formDataToSend,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      if (response.status === 201 && response.data.token) {
+        Swal.fire({
+          icon: "success",
+          title: "Registration Complete!",
+          text: "Your account has been successfully created.",
+          showConfirmButton: true,
+        });
+        Navigate(`/agreementForm`);
+      } else if (response.status === 201 && !response.data.token) {
+        // Case: Profile submitted but pending admin approval
+        Swal.fire({
+          icon: "info",
+          title: "Pending Approval",
+          text: "Your profile has been submitted. Once approved by the admin, you will receive an email. After that, you can log in.",
+        });
+      } else {
+        throw new Error(response.data.message || "Registration failed");
+      }
+    } catch (error) {
+      console.error("Error completing registration:", error);
+      const errMsg = error.response?.data?.message || "";
+
+      if (
+        errMsg ===
+        "Your profile is submitted successfully and is pending admin approval."
+      ) {
+        Swal.fire({
+          icon: "info",
+          title: "Pending Approval",
+          text: "Your profile has been submitted. Once approved by the admin, you will receive an email. After that, you can log in.",
+        });
+        Navigate("/");
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: errMsg || "Registration failed. Please try again.",
+        });
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -264,27 +406,46 @@ const Login = () => {
   return (
     <>
       <div>
-      <section className="page_breadcrumb">
-    <div className="page_breadcrumb_shape_one float-bob-x">
-      <img src="/assets/images/icons/mouse-pointer.png" alt />
-    </div>
-    <div className="page_breadcrumb_shape_two float-bob-y">
-      <img src="/assets/images/icons/shape_icon_1.png" alt />
-    </div>    
-    <div className="container">
-      <div className="breadcrumb_content centred">
-        <div className="breadcrumb_sutitle"><h6>LOGIN</h6></div>
-        <h1 className="breadcrumb_title">Welcome To Seraphina</h1>
-        <ul className="breadcrumb_menu">
-          <li><Link to={"/"} >Home</Link></li>
-          <li>/</li>
-          <li>LOGIN</li>
-        </ul>
-      </div>
-    </div>
-  </section>
-
-    
+        <section
+          className="page_breadcrumb"
+          style={{ background: "linear-gradient(135deg, #00833D, #000000)" }}
+        >
+          <div className="page_breadcrumb_shape_one float-bob-x">
+            <img src="/assets/images/icons/mouse-pointer.png" alt />
+          </div>
+          <div className="page_breadcrumb_shape_two float-bob-y">
+            <img src="/assets/images/icons/shape_icon_1.png" alt />
+          </div>
+          <div className="container">
+            <div className="breadcrumb_content centred">
+              <div className="breadcrumb_sutitle">
+                <h5
+                  style={{
+                    background: "linear-gradient(135deg, #00833D, #000000)",
+                    WebkitBackgroundClip: "text",
+                    fontWeight: "600",
+                    fontSize: "1rem",
+                    color: "#fff",
+                  }}
+                >
+                  LOGIN
+                </h5>
+              </div>
+              <h1 className="breadcrumb_title" style={{ color: "white" }}>
+                Welcome To Seraphina
+              </h1>
+              <ul className="breadcrumb_menu">
+                <li>
+                  <Link style={{ color: "white" }} to={"/"}>
+                    Home
+                  </Link>
+                </li>
+                <li style={{ color: "white" }}>/</li>
+                <li style={{ color: "white" }}>LOGIN</li>
+              </ul>
+            </div>
+          </div>
+        </section>
 
         <div className="login-area page-padding">
           <div className="container">
@@ -310,7 +471,7 @@ const Login = () => {
                           role="progressbar"
                           style={{
                             width: `${progressPercentage}%`,
-                            backgroundColor: "rgb(159, 112, 253)",
+                            background: "#000000",
                             borderRadius: "5px",
                             transition: "width 0.5s ease-in-out",
                           }}
@@ -337,7 +498,9 @@ const Login = () => {
                               height: "30px",
                               borderRadius: "50%",
                               background:
-                                step >= 1 ? "linear-gradient(111deg, #E770C1 19.42%, #9F70FD 73.08%)" : "#f0f0f0",
+                                step >= 1
+                                  ? "linear-gradient(135deg, #00833D, #000000)"
+                                  : "#f0f0f0",
                               color: step >= 1 ? "white" : "#666",
                               display: "flex",
                               alignItems: "center",
@@ -349,7 +512,7 @@ const Login = () => {
                           </div>
                           <span
                             style={{
-                              color: step >= 1 ? "#9F70FD" : "#666",
+                              color: step >= 1 ? "#00833D" : "#666",
                               fontWeight: step >= 1 ? "bold" : "normal",
                             }}
                           >
@@ -366,7 +529,9 @@ const Login = () => {
                               height: "30px",
                               borderRadius: "50%",
                               background:
-                                step >= 2 ? "linear-gradient(111deg, #E770C1 19.42%, #9F70FD 73.08%)" : "#f0f0f0",
+                                step >= 2
+                                  ? "linear-gradient(135deg, #00833D, #000000)"
+                                  : "#f0f0f0",
                               color: step >= 2 ? "white" : "#666",
                               display: "flex",
                               alignItems: "center",
@@ -378,7 +543,7 @@ const Login = () => {
                           </div>
                           <span
                             style={{
-                              color: step >= 2 ? "#9F70FD" : "#666",
+                              color: step >= 2 ? "#00833D" : "#666",
                               fontWeight: step >= 2 ? "bold" : "normal",
                             }}
                           >
@@ -395,7 +560,9 @@ const Login = () => {
                               height: "30px",
                               borderRadius: "50%",
                               background:
-                                step >= 3 ? "linear-gradient(111deg, #E770C1 19.42%, #9F70FD 73.08%)" : "#f0f0f0",
+                                step >= 3
+                                  ? "linear-gradient(135deg, #00833D, #000000)"
+                                  : "#f0f0f0",
                               color: step >= 3 ? "white" : "#666",
                               display: "flex",
                               alignItems: "center",
@@ -407,7 +574,7 @@ const Login = () => {
                           </div>
                           <span
                             style={{
-                              color: step >= 3 ? "#9F70FD" : "#666",
+                              color: step >= 3 ? "#00833D" : "#666",
                               fontWeight: step >= 3 ? "bold" : "normal",
                             }}
                           >
@@ -437,16 +604,28 @@ const Login = () => {
                               placeholder="Mobile Number"
                               value={mobileNumber}
                               onChange={(e) => setMobileNumber(e.target.value)}
+                              disabled={loading}
                             />
                             {errors.mobileNumber && (
-                              <div className="text-danger" style={{ fontSize: "14px", marginTop: "5px" }}>
+                              <div
+                                className="text-danger"
+                                style={{ fontSize: "14px", marginTop: "5px" }}
+                              >
                                 {errors.mobileNumber}
                               </div>
                             )}
                           </div>
                           <div className="col-md-12 col-sm-12 col-xs-12">
-                            <button type="submit" style={{ background: "linear-gradient(111deg, #E770C1 19.42%, #9F70FD 73.08%)"}} className="login-btn">
-                              Send OTP
+                            <button
+                              type="submit"
+                              style={{
+                                background:
+                                  "linear-gradient(135deg, #00833D, #000000)",
+                              }}
+                              className="login-btn"
+                              disabled={loading}
+                            >
+                              {loading ? "Sending..." : "Send OTP"}
                             </button>
                           </div>
                         </form>
@@ -456,6 +635,20 @@ const Login = () => {
                         <form onSubmit={handleOtpSubmit} className="log-form">
                           <div className="col-md-12 col-sm-12 col-xs-12">
                             <p>OTP sent to {mobileNumber}</p>
+                            <p> OTP: {generateOtp} </p>
+                            <p>
+                              Didn't receive OTP?{" "}
+                              <a
+                                href="#"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  handleResendOtp();
+                                }}
+                                className="text-muted"
+                              >
+                                Resend OTP
+                              </a>
+                            </p>
 
                             <div
                               style={{
@@ -482,12 +675,10 @@ const Login = () => {
                                   onChange={(e) => {
                                     const value = e.target.value;
                                     if (/^\d*$/.test(value)) {
-                                      // Only allow numbers
                                       const newOtp = otp.split("");
                                       newOtp[index] = value;
                                       setOtp(newOtp.join(""));
 
-                                      // Auto focus to next input
                                       if (value && index < 5) {
                                         const nextInput =
                                           e.target.parentElement.children[
@@ -498,7 +689,6 @@ const Login = () => {
                                     }
                                   }}
                                   onKeyDown={(e) => {
-                                    // Handle backspace to move to previous input
                                     if (
                                       e.key === "Backspace" &&
                                       !otp[index] &&
@@ -511,19 +701,36 @@ const Login = () => {
                                       if (prevInput) prevInput.focus();
                                     }
                                   }}
+                                  disabled={loading}
                                 />
                               ))}
                             </div>
                             {errors.otp && (
-                              <div className="text-danger" style={{ fontSize: "14px", marginTop: "-15px", marginBottom: "10px", textAlign: "center" }}>
+                              <div
+                                className="text-danger"
+                                style={{
+                                  fontSize: "14px",
+                                  marginTop: "-15px",
+                                  marginBottom: "10px",
+                                  textAlign: "center",
+                                }}
+                              >
                                 {errors.otp}
                               </div>
                             )}
                           </div>
 
                           <div className="col-md-12 col-sm-12 col-xs-12">
-                            <button type="submit" style={{ background: "linear-gradient(111deg, #E770C1 19.42%, #9F70FD 73.08%)"}} className="login-btn">
-                              Verify OTP
+                            <button
+                              type="submit"
+                              style={{
+                                background:
+                                  "linear-gradient(135deg, #00833D, #000000)",
+                              }}
+                              className="login-btn"
+                              disabled={loading}
+                            >
+                              {loading ? "Verifying..." : "Verify OTP"}
                             </button>
                           </div>
 
@@ -558,7 +765,10 @@ const Login = () => {
                               onChange={handleInputChange}
                             />
                             {errors.firstName && (
-                              <div className="text-danger" style={{ fontSize: "14px", marginTop: "5px" }}>
+                              <div
+                                className="text-danger"
+                                style={{ fontSize: "14px", marginTop: "5px" }}
+                              >
                                 {errors.firstName}
                               </div>
                             )}
@@ -587,7 +797,10 @@ const Login = () => {
                               onChange={handleInputChange}
                             />
                             {errors.lastName && (
-                              <div className="text-danger" style={{ fontSize: "14px", marginTop: "5px" }}>
+                              <div
+                                className="text-danger"
+                                style={{ fontSize: "14px", marginTop: "5px" }}
+                              >
                                 {errors.lastName}
                               </div>
                             )}
@@ -604,7 +817,10 @@ const Login = () => {
                               onChange={handleInputChange}
                             />
                             {errors.email && (
-                              <div className="text-danger" style={{ fontSize: "14px", marginTop: "5px" }}>
+                              <div
+                                className="text-danger"
+                                style={{ fontSize: "14px", marginTop: "5px" }}
+                              >
                                 {errors.email}
                               </div>
                             )}
@@ -617,10 +833,22 @@ const Login = () => {
                               name="dob"
                               className="form-control"
                               value={formData.dob}
+                              max={
+                                new Date(
+                                  new Date().setFullYear(
+                                    new Date().getFullYear() - 18
+                                  )
+                                )
+                                  .toISOString()
+                                  .split("T")[0]
+                              }
                               onChange={handleInputChange}
                             />
                             {errors.dob && (
-                              <div className="text-danger" style={{ fontSize: "14px", marginTop: "5px" }}>
+                              <div
+                                className="text-danger"
+                                style={{ fontSize: "14px", marginTop: "5px" }}
+                              >
                                 {errors.dob}
                               </div>
                             )}
@@ -640,7 +868,10 @@ const Login = () => {
                               <option value="Other">Other</option>
                             </select>
                             {errors.gender && (
-                              <div className="text-danger" style={{ fontSize: "14px", marginTop: "5px" }}>
+                              <div
+                                className="text-danger"
+                                style={{ fontSize: "14px", marginTop: "5px" }}
+                              >
                                 {errors.gender}
                               </div>
                             )}
@@ -655,9 +886,18 @@ const Login = () => {
                               rows="3"
                               value={formData.address}
                               onChange={handleInputChange}
+                              onInput={(e) => {
+                                e.target.style.height = "auto";
+                                e.target.style.height =
+                                  e.target.scrollHeight + "px";
+                              }}
                             />
+
                             {errors.address && (
-                              <div className="text-danger" style={{ fontSize: "14px", marginTop: "5px" }}>
+                              <div
+                                className="text-danger"
+                                style={{ fontSize: "14px", marginTop: "5px" }}
+                              >
                                 {errors.address}
                               </div>
                             )}
@@ -688,7 +928,10 @@ const Login = () => {
                                 : "Upload Profile Image"}
                             </button>
                             {errors.profileImage && (
-                              <div className="text-danger" style={{ fontSize: "14px", marginTop: "5px" }}>
+                              <div
+                                className="text-danger"
+                                style={{ fontSize: "14px", marginTop: "5px" }}
+                              >
                                 {errors.profileImage}
                               </div>
                             )}
@@ -732,7 +975,14 @@ const Login = () => {
                               style={{ marginBottom: "10px" }}
                             />
                             {errors.aadharNumber && (
-                              <div className="text-danger" style={{ fontSize: "14px", marginTop: "-5px", marginBottom: "10px" }}>
+                              <div
+                                className="text-danger"
+                                style={{
+                                  fontSize: "14px",
+                                  marginTop: "-5px",
+                                  marginBottom: "10px",
+                                }}
+                              >
                                 {errors.aadharNumber}
                               </div>
                             )}
@@ -764,7 +1014,13 @@ const Login = () => {
                                     : "Upload Aadhar Front"}
                                 </button>
                                 {errors.aadharFront && (
-                                  <div className="text-danger" style={{ fontSize: "14px", marginTop: "5px" }}>
+                                  <div
+                                    className="text-danger"
+                                    style={{
+                                      fontSize: "14px",
+                                      marginTop: "5px",
+                                    }}
+                                  >
                                     {errors.aadharFront}
                                   </div>
                                 )}
@@ -808,7 +1064,13 @@ const Login = () => {
                                     : "Upload Aadhar Back"}
                                 </button>
                                 {errors.aadharBack && (
-                                  <div className="text-danger" style={{ fontSize: "14px", marginTop: "5px" }}>
+                                  <div
+                                    className="text-danger"
+                                    style={{
+                                      fontSize: "14px",
+                                      marginTop: "5px",
+                                    }}
+                                  >
                                     {errors.aadharBack}
                                   </div>
                                 )}
@@ -854,7 +1116,14 @@ const Login = () => {
                               style={{ marginBottom: "10px" }}
                             />
                             {errors.panNumber && (
-                              <div className="text-danger" style={{ fontSize: "14px", marginTop: "-5px", marginBottom: "10px" }}>
+                              <div
+                                className="text-danger"
+                                style={{
+                                  fontSize: "14px",
+                                  marginTop: "-5px",
+                                  marginBottom: "10px",
+                                }}
+                              >
                                 {errors.panNumber}
                               </div>
                             )}
@@ -886,7 +1155,13 @@ const Login = () => {
                                     : "Upload PAN Front"}
                                 </button>
                                 {errors.panFront && (
-                                  <div className="text-danger" style={{ fontSize: "14px", marginTop: "5px" }}>
+                                  <div
+                                    className="text-danger"
+                                    style={{
+                                      fontSize: "14px",
+                                      marginTop: "5px",
+                                    }}
+                                  >
                                     {errors.panFront}
                                   </div>
                                 )}
@@ -931,7 +1206,13 @@ const Login = () => {
                                     : "Upload PAN Back"}
                                 </button>
                                 {errors.panBack && (
-                                  <div className="text-danger" style={{ fontSize: "14px", marginTop: "5px" }}>
+                                  <div
+                                    className="text-danger"
+                                    style={{
+                                      fontSize: "14px",
+                                      marginTop: "5px",
+                                    }}
+                                  >
                                     {errors.panBack}
                                   </div>
                                 )}
@@ -958,8 +1239,18 @@ const Login = () => {
                           </div>
 
                           <div className="col-md-12 col-sm-12 col-xs-12">
-                            <button type="submit" style={{ background: "linear-gradient(111deg, #E770C1 19.42%, #9F70FD 73.08%)"}} className="login-btn">
-                              Complete Registration
+                            <button
+                              type="submit"
+                              style={{
+                                background:
+                                  "linear-gradient(135deg, #00833D, #000000)",
+                              }}
+                              className="login-btn"
+                              disabled={loading}
+                            >
+                              {loading
+                                ? "Processing..."
+                                : "Complete Registration"}
                             </button>
                           </div>
                         </form>

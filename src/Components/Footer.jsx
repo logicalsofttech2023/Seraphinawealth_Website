@@ -1,9 +1,13 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import AOS from "aos";
 import "aos/dist/aos.css";
-import logo from "./logo.png"
+import logo from "./logo.png";
+import axios from "axios";
+import Swal from "sweetalert2";
 const Footer = () => {
+  const [email , setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
   useEffect(() => {
     AOS.init({
       duration: 800,
@@ -12,6 +16,50 @@ const Footer = () => {
       mirror: false,
     });
   }, []);
+
+  const handleNewsletterSubmit = async (e) => {
+  e.preventDefault();
+
+  if (!email) {
+    Swal.fire({
+      icon: "warning",
+      title: "Email Required",
+      text: "Please enter your email address.",
+    });
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const res = await axios.post(
+      `${import.meta.env.VITE_API_URL}subscribeNewsletter`,
+      { email }
+    );
+
+    if (res.status === 201 || res.status === 200) {
+      Swal.fire({
+        icon: "success",
+        title: "Subscribed!",
+        text: "You have successfully subscribed to our newsletter.",
+        showConfirmButton: true,
+      });
+      setEmail(""); // reset email input if using useState
+    }
+  } catch (err) {
+    console.error("Subscription failed:", err);
+    Swal.fire({
+      icon: "error",
+      title: "Subscription Failed",
+      text:
+        err?.response?.data?.message ||
+        "An error occurred. Please try again later.",
+    });
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <>
@@ -40,24 +88,12 @@ const Footer = () => {
                       />
                     </Link>
                   </figure>
-                  <p>
-                    The future is fast approaching, and the consumer industry is
-                    on the precipice of dramatic change.
+                  <p style={{ fontWeight: "bold", marginTop: "10px", fontSize: "15px" }}>
+                    Your Wealth, Our Wings. <br />
+                    Smart Investments. Powerful Growth.
                   </p>
-                  <ul className="social-links">
-                    <li>
-                      <a href="#"><i className="icon-43" /></a>
-                    </li>
-                    <li>
-                      <a href="#"><i className="icon-42" /></a>
-                    </li>
-                    <li>
-                      <a href="#"><i className="icon-40" /></a>
-                    </li>
-                    <li>
-                      <a href="#"><i className="icon-41" /></a>
-                    </li>
-                  </ul>
+                  
+                  
                 </div>
               </div>
 
@@ -71,11 +107,17 @@ const Footer = () => {
                 >
                   <h4 className="footer_widget_title">Pages</h4>
                   <ul className="page_list">
-                    <li><Link to="/about">About Us</Link></li>
-                    <li><Link to="/blogs">Blogs</Link></li>
-                    <li><Link to="/faq">FAQ's</Link></li>
-                    <li><Link to="/contact">Contact</Link></li>
-                    <li><Link to="/support">Support</Link></li>
+                    <li>
+                      <Link to="/about">About Us</Link>
+                    </li>
+                    
+                    <li>
+                      <Link to="/faq">FAQ's</Link>
+                    </li>
+                    <li>
+                      <Link to="/contact">Contact</Link>
+                    </li>
+                   
                   </ul>
                 </div>
               </div>
@@ -90,11 +132,16 @@ const Footer = () => {
                 >
                   <h4 className="footer_widget_title">Primary Pages</h4>
                   <ul className="primary_page_list">
-                    <li><Link to="/investmentplans">Investment Plans</Link></li>
-                    <li><Link to="/careers">Careers</Link></li>
-                    <li><Link to="/pricing">Pricing Plans</Link></li>
-                    <li><Link to="/portfolio">Portfolio</Link></li>
-                    <li><Link to="/news">News</Link></li>
+                    <li>
+                      <Link to="/researchAnalysis">Research Analysis</Link>
+                    </li>
+                   
+                    <li>
+                      <Link to="/privacyPolicy">Privacy Policy</Link>
+                    </li>
+                    <li>
+                      <Link to="/termsAndCondition">Terms & Conditions</Link>
+                    </li>
                   </ul>
                 </div>
               </div>
@@ -108,11 +155,28 @@ const Footer = () => {
                   data-aos-duration={650}
                 >
                   <h4 className="footer_widget_title">Subscribe Newsletter</h4>
-                  <p>
-                    To add complexity, this is happening against a backdrop of
-                    significant challenges.
-                  </p>
-                  
+
+                  <div className="subscribe-inner">
+                    <form className="subscribe-form" onSubmit={handleNewsletterSubmit}>
+                      <div className="form-group" >
+                        <input
+                          type="email"
+                          name="email"
+                          placeholder="Email Address"
+                          style={{ width: "100%" }}
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                        />
+                        <button
+                          type="submit"
+                          className="btn_style_one"
+                          style={{ width: "50%", padding: "10px" }}
+                        >
+                          {loading ? "Sending..." : "Subscribe"}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
                 </div>
               </div>
             </div>
@@ -123,13 +187,13 @@ const Footer = () => {
         <div className="footer_bottom">
           <div className="container">
             <div className="copyright">
-              Copyright © 2024 &nbsp;
-              <Link to="/">Financer</Link>, Inc. All Rights Reserved.
+              Copyright © 2025 &nbsp;
+              <Link to="/" style={{ color: "#00833D"}}>Seraphina Wealth</Link>, Inc. All Rights Reserved.
             </div>
           </div>
         </div>
 
-        {/* Decorative Shape (style with CSS if needed) */}
+        {/* Decorative Shape */}
         <div className="footer_shape" />
       </footer>
     </>

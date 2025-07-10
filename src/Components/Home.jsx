@@ -9,14 +9,64 @@ import PopulerInvestment from "./Pages/PopulerInvestment";
 import Banner from "./Banner";
 import FeaturedPlans from "./Pages/FeaturedPlans";
 import RecommendedPlans from "./Pages/RecommendedPlans";
-const Home = () => {
-  
+import { useNavigate } from "react-router-dom";
+import WhyChooseUs from "./Pages/WhyChooseUs";
+import OurPopularPlans from "./Pages/OurPopularPlans";
+import axios from "axios";
+import Swal from "sweetalert2";
 
+const Home = () => {
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
   useEffect(() => {
+    window.scrollTo(0, 0);
     AOS.init({ once: true });
   }, []);
 
-  
+  const navigate = useNavigate();
+
+  const handleNewsletterSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!email) {
+      Swal.fire({
+        icon: "warning",
+        title: "Email Required",
+        text: "Please enter your email address.",
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const res = await axios.post(
+        `${import.meta.env.VITE_API_URL}subscribeNewsletter`,
+        { email }
+      );
+
+      if (res.status === 200) {
+        Swal.fire({
+          icon: "success",
+          title: "Subscribed!",
+          text: "You have successfully subscribed to our newsletter.",
+          showConfirmButton: true,
+        });
+        setEmail(""); // reset email input if using useState
+      }
+    } catch (err) {
+      console.error("Subscription failed:", err);
+      Swal.fire({
+        icon: "error",
+        title: "Subscription Failed",
+        text:
+          err?.response?.data?.message ||
+          "An error occurred. Please try again later.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div>
@@ -60,68 +110,9 @@ const Home = () => {
 
         <Banner />
 
-        <Categoryslider />
+        {/* <Categoryslider /> */}
 
-        
-
-        <FeaturedPlans />
-
-        <section className="feature_section">
-          <div className="container">
-            <div className="row">
-              {/* Secure Retirement Block */}
-              <div className="col-xl-5 col-lg-6 col-md-12 col-sm-12">
-                <div
-                  className="feature_block_one"
-                  data-aos="fade-up"
-                  data-aos-easing="linear"
-                  data-aos-duration="500"
-                >
-                  <div className="tag_icon">
-                    <i className="icon-49" />
-                  </div>
-                  <h3>Secure Retirement</h3>
-                  <p>
-                    Want to feel more confident about your financial future? Our
-                    range of annuity strategies can help.
-                  </p>
-                  <div className="chart_box">
-                    <img
-                      src="/assets/images/resource/chart_2.png"
-                      alt="Retirement Chart"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Invest with Potential Block */}
-              <div className="col-xl-7 col-lg-6 col-md-12 col-sm-12">
-                <div
-                  className="feature_block_one"
-                  data-aos="fade-up"
-                  data-aos-easing="linear"
-                  data-aos-duration="600"
-                >
-                  <div className="tag_icon">
-                    <i className="icon-48" />
-                  </div>
-                  <h3>Invest with Potential</h3>
-                  <p>
-                    FlexGuard includes a Performance Lock feature which gives
-                    clients the flexibility to set the End Date for their
-                    future.
-                  </p>
-                  <div className="chart_box">
-                    <img
-                      src="/assets/images/resource/chart_3.png"
-                      alt="Investment Chart"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+        {/* <FeaturedPlans /> */}
 
         <section className="funfact-section">
           <div
@@ -134,9 +125,10 @@ const Home = () => {
           <div className="container">
             <div className="row">
               {/* Expert Team Members */}
-              <div className="col-xl-3 col-lg-3 col-md-6 col-sm-12">
+              <div className="col-xl-4 col-lg-4 col-md-6 col-sm-12">
                 <div
                   className="funfact-block-one"
+                  style={{ margin: "auto"}}
                   data-aos="fade-up"
                   data-aos-easing="linear"
                   data-aos-duration="500"
@@ -147,39 +139,40 @@ const Home = () => {
                       data-speed="1500"
                       data-stop="150"
                     >
-                      150
+                      100
                     </span>
                     <span>+</span>
                   </div>
-                  <h6>Expert Team Members</h6>
+                  <h6>Active Customers</h6>
                 </div>
               </div>
 
               {/* Total Assets under Management */}
-              <div className="col-xl-3 col-lg-3 col-md-6 col-sm-12">
+              <div className="col-xl-4 col-lg-4 col-md-6 col-sm-12">
                 <div
                   className="funfact-block-one"
+                  style={{ margin: "auto"}}
                   data-aos="fade-up"
                   data-aos-easing="linear"
                   data-aos-duration="550"
                 >
                   <div className="count-outer count-box">
-                    <span>$</span>
+                    
                     <span
                       className="count-text"
                       data-speed="1500"
                       data-stop="3.5"
                     >
-                      3.5
+                      50
                     </span>
-                    <span>B+</span>
+                    <span>+</span>
                   </div>
-                  <h6>Total Assets under Manage</h6>
+                  <h6>Projects Completed</h6>
                 </div>
               </div>
 
               {/* Project Completed */}
-              <div className="col-xl-3 col-lg-3 col-md-6 col-sm-12">
+              {/* <div className="col-xl-4 col-lg-4 col-md-6 col-sm-12">
                 <div
                   className="funfact-block-one"
                   data-aos="fade-up"
@@ -198,12 +191,13 @@ const Home = () => {
                   </div>
                   <h6>Project Completed</h6>
                 </div>
-              </div>
+              </div> */}
 
               {/* Customer Satisfaction */}
-              <div className="col-xl-3 col-lg-3 col-md-6 col-sm-12">
+              <div className="col-xl-4 col-lg-4 col-md-6 col-sm-12">
                 <div
                   className="funfact-block-one"
+                  style={{ margin: "auto"}}
                   data-aos="fade-up"
                   data-aos-easing="linear"
                   data-aos-duration="650"
@@ -225,127 +219,11 @@ const Home = () => {
           </div>
         </section>
 
-        <section className="why_choose_us">
-          <div className="container">
-            <div className="row why_choose_us_row">
-              {/* Left Section */}
-              <div className="col-xl-6 col-lg-6 col-md-12 col-sm-12">
-                <div
-                  className="why_choose_left"
-                  data-aos="fade-right"
-                  data-aos-easing="linear"
-                  data-aos-duration="500"
-                >
-                  <div className="tag_text">
-                    <h6>Why Choose US</h6>
-                  </div>
-                  <h2>Investment views and financial market data</h2>
-                  <p>
-                    We want to create superior value for our clients,
-                    shareholders, and employees. And we want to stand out as a
-                    winner in our industry for our expertise, advice, and
-                    execution.
-                  </p>
-                  <div className="link_btn">
-                    <a href="#" className="btn_style_one">
-                      Contact Us
-                    </a>
-                  </div>
-                </div>
-              </div>
+        <WhyChooseUs />
 
-              {/* Right Section with Features */}
-              <div className="col-xl-6 col-lg-6 col-md-12 col-sm-12">
-                <div
-                  className="why_choose_right"
-                  data-aos="fade-left"
-                  data-aos-easing="linear"
-                  data-aos-duration="600"
-                >
-                  <div className="row">
-                    {/* Investor Relations */}
-                    <div className="col-xl-6 col-lg-6 col-md-6 col-sm-12 colmun">
-                      <div
-                        className="why_choose_block_one mb_40"
-                        data-aos="fade-up"
-                        data-aos-easing="linear"
-                        data-aos-duration="600"
-                      >
-                        <div className="choose_icon">
-                          <i className="icon-47" />
-                        </div>
-                        <h4>Investor Relations</h4>
-                        <p>
-                          Duis aute irure dolor in velit one reprehenderit in
-                          voluptate more esse cillum dolore neris.
-                        </p>
-                      </div>
-                    </div>
+        {/* <OurPopularPlans /> */}
 
-                    {/* Corporate Calendar */}
-                    <div className="col-xl-6 col-lg-6 col-md-6 col-sm-12 colmun">
-                      <div
-                        className="why_choose_block_one mt_70 mb_40"
-                        data-aos="fade-up"
-                        data-aos-easing="linear"
-                        data-aos-duration="650"
-                      >
-                        <div className="choose_icon">
-                          <i className="icon-46" />
-                        </div>
-                        <h4>Corporate Calendar</h4>
-                        <p>
-                          Duis aute irure dolor in velit one reprehenderit in
-                          voluptate more esse cillum dolore neris.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Sustainability */}
-                    <div className="col-xl-6 col-lg-6 col-md-6 col-sm-12 colmun">
-                      <div
-                        className="why_choose_block_one mt_-70 mb_40"
-                        data-aos="fade-up"
-                        data-aos-easing="linear"
-                        data-aos-duration="700"
-                      >
-                        <div className="choose_icon">
-                          <i className="icon-45" />
-                        </div>
-                        <h4>Sustainability</h4>
-                        <p>
-                          Duis aute irure dolor in velit one reprehenderit in
-                          voluptate more esse cillum dolore neris.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Annual Reporting */}
-                    <div className="col-xl-6 col-lg-6 col-md-6 col-sm-12 colmun">
-                      <div
-                        className="why_choose_block_one"
-                        data-aos="fade-up"
-                        data-aos-easing="linear"
-                        data-aos-duration="750"
-                      >
-                        <div className="choose_icon">
-                          <i className="icon-44" />
-                        </div>
-                        <h4>Annual Reporting</h4>
-                        <p>
-                          Duis aute irure dolor in velit one reprehenderit in
-                          voluptate more esse cillum dolore neris.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <PopulerInvestment />
+        {/* <PopulerInvestment /> */}
 
         <section className="work_process_section">
           <div className="container">
@@ -368,10 +246,10 @@ const Home = () => {
                   <div className="process_icon">
                     <i className="icon-35" />
                   </div>
-                  <h4>Step 1: Create Account</h4>
+                  <h4>Step 1: Share Your Goals</h4>
                   <p>
-                    Easily create your Zaplin account with one click and get 100
-                    Million Tokens
+                    Tell us about your financial priorities — whether it’s
+                    saving, investing, or planning for your business or family.
                   </p>
                 </div>
               </div>
@@ -387,10 +265,10 @@ const Home = () => {
                   <div className="process_icon">
                     <i className="icon-36" />
                   </div>
-                  <h4>Step 2: Type Contex</h4>
+                  <h4>Step 2: Choose a Plan</h4>
                   <p>
-                    Easily create your Zaplin account with one click and get 100
-                    Million Tokens
+                    Select one of our advisory plans designed for individuals,
+                    businesses, or institutions — based on your needs and stage.
                   </p>
                 </div>
               </div>
@@ -406,10 +284,11 @@ const Home = () => {
                   <div className="process_icon">
                     <i className="icon-37" />
                   </div>
-                  <h4>Step 3: Get Images</h4>
+                  <h4>Step 3: Get Personalized Guidance</h4>
                   <p>
-                    Easily create your Zaplin account with one click and get 100
-                    Million Tokens
+                    Receive structured financial reports, insights, and
+                    recommendations from our team — delivered directly to your
+                    inbox.
                   </p>
                 </div>
               </div>
@@ -425,23 +304,11 @@ const Home = () => {
                 backgroundImage:
                   "url(/assets/images/background/video_box_bg.jpg)",
               }}
-            >
-              <a
-                href="https://www.youtube.com/watch?v=nfP5N9Yc72A&t=28s"
-                className="lightbox-image"
-                data-caption=""
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <div className="icon_box">
-                  <i className="icon-38" />
-                </div>
-              </a>
-            </div>
+            ></div>
           </div>
         </section>
 
-        <section className="team_section">
+        {/* <section className="team_section">
           <div
             className="shape_one float-bob-x"
             style={{
@@ -614,38 +481,38 @@ const Home = () => {
               </div>
             </div>
           </div>
-        </section>
+        </section> */}
 
-        <RecommendedPlans />
+        {/* <RecommendedPlans /> */}
 
         <section
           className="cta_section"
           data-aos="fade-up"
           data-aos-easing="linear"
           data-aos-duration="500"
-           style={{marginTop: "50px"}}
+          style={{ marginTop: "50px" }}
         >
-         
           <div className="container">
             <div className="cta_inner">
-              <h3>
-                Subscribe for latest update <br /> about Finance
+              <h3 style={{ color: "#fff !important" }}>
+                Subscribe to our weekly <br /> news latter
               </h3>
               <div className="subscribe-inner">
                 <form
-                  action="contact.html"
-                  method="post"
                   className="subscribe-form"
+                  onSubmit={handleNewsletterSubmit}
                 >
                   <div className="form-group">
                     <input
                       type="email"
                       name="email"
                       placeholder="Enter your email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
                       required
                     />
                     <button type="submit" className="btn_style_one">
-                      Get Started
+                      {loading ? "Sending..." : "Subscribe"}
                     </button>
                   </div>
                 </form>

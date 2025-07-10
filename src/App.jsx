@@ -13,6 +13,12 @@ import Loader from "./Components/Loader"; // ✅ Loader Component
 
 import "./index.css";
 import Investmentplans from "./Components/Pages/Investmentplans";
+import InvestPlanDetail from "./Components/Pages/InvestPlanDetail";
+import ContactUs from "./Components/Pages/ContactUs";
+import AgreementForm from "./Components/Pages/AgreementForm";
+import ResearchAnalysis from "./Components/Pages/ResearchAnalysis";
+import PrivacyPolicy from "./Components/Pages/PrivacyPolicy";
+import TermsAndCondition from "./Components/Pages/TermsAndCondition";
 
 const App = () => {
   const [loading, setLoading] = useState(true);
@@ -44,8 +50,12 @@ const App = () => {
         <Route path="/faq" element={<Faq />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/investmentplans" element={<Investmentplans />} />
-
-
+        <Route path="/investPlanDetail" element={<InvestPlanDetail />} />
+        <Route path="/contact" element={<ContactUs />} />
+        <Route path="/agreementForm" element={<AgreementForm />} />
+        <Route path="/researchAnalysis" element={<ResearchAnalysis />} />
+        <Route path="/privacyPolicy" element={<PrivacyPolicy />} />
+        <Route path="/termsAndCondition" element={<TermsAndCondition />} />
       </Routes>
       {shouldHideHeaderFooter && <Footer />}
     </div>

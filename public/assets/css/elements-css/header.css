@@ -90,12 +90,12 @@
     cursor: pointer;
     transition: all 500ms ease;
 }
-.search-popup .search-form fieldset input[type="search"]:focus{
+/* .search-popup .search-form fieldset input[type="search"]:focus{
   border-color: #141417;
-}
-.search-popup .form-control:focus{
+} */
+/* .search-popup .form-control:focus{
   box-shadow: none !important;
-}
+} */
 
 /* Main Header */
 .main_header_inner{
@@ -252,7 +252,7 @@ nav.main-menu{
 }
 .main-menu .navigation > li.active{
     border-radius: 100px;
-    background: rgba(159, 112, 253, 0.12);
+    background: linear-gradient(135deg, #00833D, #000000)
 }
 .main-menu .navigation > li > a{
     position:relative;
@@ -273,7 +273,7 @@ nav.main-menu{
     transition:all 500ms ease;
 }
 .main-menu .navigation > li.active a{
-    color: var(--theme-color);
+    color: #fff;
 }
 .main-menu .navigation > li > ul,
 .main-menu .navigation > li > .megamenu{
@@ -900,7 +900,7 @@ div#mCSB_1_container{
     font-size: 24px;
     z-index: 99;
     color: #fff;
-    background: linear-gradient(267deg, #E770C1 11.27%, #9F70FD 88.73%);
+    background: linear-gradient(135deg, #00833D, #000000)
     border: 1px solid var(--theme-color);
     border-radius: 50%;
     text-align: center;
@@ -918,7 +918,7 @@ div#mCSB_1_container{
     z-index: -1;
     transform: scale(0.0);
     border-radius: 50%;
-    background: linear-gradient(267deg, #9F70FD 11.27%, #E770C1 88.73%);
+    background: linear-gradient(135deg, #00833D, #000000)
     transition: all 900ms ease;
     -moz-transition: all 900ms ease;
     -webkit-transition: all 900ms ease;
