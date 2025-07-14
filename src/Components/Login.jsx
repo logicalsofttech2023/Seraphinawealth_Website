@@ -3,6 +3,10 @@ import "./Login.css";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import Swal from "sweetalert2";
+import { 
+  useMediaQuery,
+  useTheme
+} from '@mui/material';
 
 const Login = () => {
   const Navigate = useNavigate();
@@ -43,6 +47,8 @@ const Login = () => {
   const panBackRef = useRef();
   const profileImageRef = useRef();
   const token = localStorage.getItem("token");
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   useEffect(() => {
     if (token) {
@@ -451,8 +457,8 @@ const Login = () => {
           <div className="container">
             <div className="row">
               <div className="col-md-12 col-sm-12 col-xs-12">
-                <div className="login-page">
-                  <div className="login-form">
+                <div className="login-page" style={{ width: isMobile ? "100%" : "75%" }}>
+                  <div className="login-form"> 
                     {/* Progress Bar */}
                     <div
                       className="progress-container"

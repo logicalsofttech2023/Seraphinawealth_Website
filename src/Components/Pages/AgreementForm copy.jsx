@@ -29,11 +29,10 @@ const AgreementForm = () => {
     business: false,
     institutional: false,
   });
-  const [hasTakenPlan, setHasTakenPlan] = useState([]);
+  const [hasTakenPlan, setHasTakenPlan] = useState();
   const [error, setError] = useState(null);
   const [planAmount, setPlanAmount] = useState({});
-  const [plans, setPlans] = useState([]);
-  const [currentPlanIndex, setCurrentPlanIndex] = useState(0);
+  
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -168,21 +167,6 @@ const AgreementForm = () => {
   };
 
   const handleServiceSelection = (serviceId) => {
-    // Check if this service is from an active plan
-    const isFromActivePlan = hasTakenPlan.some((plan) => {
-      if (plan.serviceChoice === "individual") {
-        return plan.individualBusinessServices.some((s) => s._id === serviceId);
-      } else if (plan.serviceChoice === "business") {
-        return plan.businessServices.some((s) => s._id === serviceId);
-      } else if (plan.serviceChoice === "institutional") {
-        return plan.institutionalServices.some((s) => s._id === serviceId);
-      }
-      return false;
-    });
-
-    if (isFromActivePlan) {
-      return; // Don't allow deselecting services from active plans
-    }
     setSelectedServices((prev) => {
       if (prev.includes(serviceId)) {
         return prev.filter((id) => id !== serviceId);
@@ -241,37 +225,20 @@ const AgreementForm = () => {
       );
     }
 
-    // Fixed tiered prices
-    const tieredPrices = [250000, 150000, 100000, 100000];
-    const tieredPercentages = [100, 60, 40, 40];
+    // Get tiered percentages from planAmount or use defaults
+    const tieredPercentages = planAmount?.selectPercentage || [100, 60, 40, 40];
 
-    // Separate services from active plans and new selections
-    const activePlanServices = hasTakenPlan.flatMap((plan) => {
-      if (plan.serviceChoice === "individual") {
-        return plan.individualBusinessServices.map((s) => s._id);
-      } else if (plan.serviceChoice === "business") {
-        return plan.businessServices.map((s) => s._id);
-      } else if (plan.serviceChoice === "institutional") {
-        return plan.institutionalServices.map((s) => s._id);
-      }
-      return [];
-    });
-
-    const newlySelectedServices = selectedServices.filter(
-      (id) => !activePlanServices.includes(id)
+    // Calculate tiered prices based on base price and percentages
+    const tieredPrices = tieredPercentages?.map((percent) =>
+      planAmount?.basePrice
+        ? Math.round(planAmount.basePrice * (percent / 100))
+        : [250000, 150000, 100000, 100000][tieredPercentages?.indexOf(percent)]
     );
 
-    // Calculate total amount - this is the key fix
-    let totalAmount = 0;
-    let priceIndex = 0;
-
-    selectedServices.forEach((serviceId, index) => {
-      // Use the tiered price based on overall position (0-3)
-      if (priceIndex < tieredPrices.length) {
-        totalAmount += tieredPrices[priceIndex];
-        priceIndex++;
-      }
-    });
+    // Calculate total base amount based on order of selected services
+    let totalAmount = selectedServices.reduce((sum, _, index) => {
+      return sum + (tieredPrices[index] || 0);
+    }, 0);
 
     // Add platform fee if enabled
     let platformFeeAmount = 0;
@@ -292,12 +259,10 @@ const AgreementForm = () => {
       <div style={{ marginTop: "20px" }}>
         {services.map((service) => {
           const isSelected = selectedServices.includes(service._id);
-          const isFromActivePlan = activePlanServices.includes(service._id);
-          const positionInSelected = selectedServices.indexOf(service._id);
-          const basePrice =
-            isSelected && positionInSelected < tieredPrices.length
-              ? tieredPrices[positionInSelected]
-              : 0;
+          const indexInSelected = selectedServices.indexOf(service._id);
+          const basePrice = isSelected
+            ? tieredPrices[indexInSelected] || 0
+            : tieredPrices[selectedServices.length] || 0;
 
           // Calculate platform fee for this service if enabled
           let servicePlatformFee = 0;
@@ -330,7 +295,6 @@ const AgreementForm = () => {
                 border: isSelected
                   ? "1px solid rgba(0, 131, 61, 0.2)"
                   : "1px solid #eee",
-                opacity: isFromActivePlan ? 0.8 : 1,
               }}
             >
               <input
@@ -338,15 +302,12 @@ const AgreementForm = () => {
                 id={`service-${service._id}`}
                 checked={isSelected}
                 onChange={() => handleServiceSelection(service._id)}
-                disabled={
-                  (selectedServices.length >= 4 && !isSelected) ||
-                  isFromActivePlan
-                }
+                disabled={selectedServices.length >= 4 && !isSelected}
                 style={{
                   width: "18px",
                   height: "18px",
                   marginRight: "12px",
-                  cursor: isFromActivePlan ? "not-allowed" : "pointer",
+                  cursor: "pointer",
                   accentColor: "#00833D",
                 }}
               />
@@ -359,61 +320,31 @@ const AgreementForm = () => {
                   justifyContent: "space-between",
                   alignItems: "center",
                   color: "#34495e",
-                  cursor: isFromActivePlan ? "default" : "pointer",
+                  cursor: "pointer",
                   fontWeight: isSelected ? "600" : "400",
                 }}
               >
-                <div>
-                  {service.name}
-                  {isFromActivePlan && (
-                    <span
-                      style={{
-                        fontSize: "12px",
-                        color: "#00833D",
-                        marginLeft: "8px",
-                      }}
-                    >
-                      (Active Plan)
-                    </span>
-                  )}
-                </div>
+                {service.name}
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontWeight: "bold", color: "#00833D" }}>
-                    {isSelected ? (
-                      <>
-                        ₹{basePrice.toLocaleString("en-IN")}
-                        {planAmount?.platformFeeStatus && (
-                          <span>
-                            {" "}
-                            + ₹{servicePlatformFee.toLocaleString("en-IN")}{" "}
-                            platform fee
-                          </span>
-                        )}
-                        {planAmount?.gstStatus && (
-                          <span>
-                            {" "}
-                            + ₹{serviceGst.toLocaleString("en-IN")} GST
-                          </span>
-                        )}
-                      </>
-                    ) : (
-                      "Select to see price"
+                    ₹{basePrice.toLocaleString("en-IN")}
+                    {planAmount?.platformFeeStatus && (
+                      <span>
+                        {" "}
+                        + ₹{servicePlatformFee.toLocaleString("en-IN")} platform
+                        fee
+                      </span>
+                    )}
+                    {planAmount?.gstStatus && (
+                      <span> + ₹{serviceGst.toLocaleString("en-IN")} GST</span>
                     )}
                   </div>
+                  <div style={{ fontSize: "12px", color: "#666" }}>
+                    (Total ₹{serviceTotal.toLocaleString("en-IN")})
+                  </div>
                   {isSelected && (
-                    <div style={{ fontSize: "12px", color: "#666" }}>
-                      (Total ₹{serviceTotal.toLocaleString("en-IN")})
-                      {positionInSelected < tieredPercentages.length && (
-                        <span
-                          style={{
-                            fontSize: "10px",
-                            color: "#888",
-                            marginLeft: "8px",
-                          }}
-                        >
-                          {tieredPercentages[positionInSelected]}% of base price
-                        </span>
-                      )}
+                    <div style={{ fontSize: "10px", color: "#888" }}>
+                      {tieredPercentages[indexInSelected]}% of base price
                     </div>
                   )}
                 </div>
@@ -422,7 +353,7 @@ const AgreementForm = () => {
           );
         })}
 
-        {newlySelectedServices.length + activePlanServices.length >= 4 && (
+        {selectedServices.length >= 4 && (
           <div
             style={{
               color: "#e74c3c",
@@ -433,10 +364,9 @@ const AgreementForm = () => {
           >
             Maximum 4 services can be selected (₹
             {tieredPrices
-              .slice(0, 4)
               .reduce((a, b) => a + b, 0)
-              .toLocaleString("en-IN")}{" "}
-            + {planAmount?.gstStatus ? `${planAmount.gst}% GST` : ""} total)
+              .toLocaleString("en-IN")} +{" "}
+            {planAmount?.gstStatus ? `${planAmount.gst}% GST` : ""} total)
           </div>
         )}
 
@@ -460,20 +390,13 @@ const AgreementForm = () => {
             <div style={{ fontSize: "12px", color: "#7f8c8d" }}>
               {selectedServices.length} service
               {selectedServices.length !== 1 ? "s" : ""} selected
-              {activePlanServices.length > 0 && (
-                <span> ({activePlanServices.length} from active plans)</span>
-              )}
             </div>
             <div
               style={{ fontSize: "12px", color: "#7f8c8d", marginTop: "4px" }}
             >
-              Tier pricing:{" "}
-              {selectedServices.slice(0, 4).map((_, i) => (
-                <span key={i}>
-                  {i > 0 && ", "}₹
-                  {tieredPrices[i]?.toLocaleString("en-IN") || "0"}
-                </span>
-              ))}
+              Tier percentages:{" "}
+              {tieredPercentages?.slice(0, selectedServices.length).join("%, ")}
+              %
             </div>
           </div>
           <div style={{ textAlign: "right" }}>
@@ -597,103 +520,32 @@ const AgreementForm = () => {
           return;
         }
       }
-
-      // Create the new plan object with only service IDs
-      const newPlan = {
+      // Prepare the request body based on the selected service choice
+      const requestBody = {
         deliveryPreference,
         serviceChoice,
-        startDate: new Date().toISOString(),
+        startDate: new Date().toISOString(), // Current date as start date
         endDate: new Date(
           new Date().setMonth(new Date().getMonth() + 6)
         ).toISOString(),
         totalPrice: totalWithGST,
       };
 
-      // Add only service IDs based on the selected plan
+      // Add services based on the selected plan
       if (serviceChoice === "free") {
-        newPlan.freeOfferings = freeServices.map((service) => service._id);
+        requestBody.freeOfferings = freeServices.map((service) => service._id);
       } else if (serviceChoice === "individual") {
-        newPlan.individualBusinessServices = selectedServices;
+        requestBody.individualBusinessServices = selectedServices;
       } else if (serviceChoice === "business") {
-        newPlan.businessServices = selectedServices;
+        requestBody.businessServices = selectedServices;
       } else if (serviceChoice === "institutional") {
-        newPlan.institutionalServices = selectedServices;
+        requestBody.institutionalServices = selectedServices;
       }
 
-      // Check for duplicate plans
-      const isDuplicate = plans.some((plan) => {
-        if (plan.serviceChoice !== newPlan.serviceChoice) return false;
-        if (plan.deliveryPreference !== newPlan.deliveryPreference)
-          return false;
-
-        const existingServices =
-          plan.freeOfferings ||
-          plan.individualBusinessServices ||
-          plan.businessServices ||
-          plan.institutionalServices ||
-          [];
-
-        const newServices =
-          newPlan.freeOfferings ||
-          newPlan.individualBusinessServices ||
-          newPlan.businessServices ||
-          newPlan.institutionalServices ||
-          [];
-
-        return (
-          JSON.stringify(existingServices.sort()) ===
-          JSON.stringify(newServices.sort())
-        );
-      });
-
-      if (isDuplicate) {
-        Swal.fire(
-          "Error",
-          "This plan configuration already exists in your selection",
-          "error"
-        );
-        return;
-      }
-
-      // Add the new plan to the plans array
-      const updatedPlans = [...plans, newPlan];
-      setPlans(updatedPlans);
-
-      // Ask if user wants to add another plan
-      const { isConfirmed } = await Swal.fire({
-        title: "Plan Added",
-        text: "Would you like to add another plan?",
-        icon: "question",
-        showCancelButton: true,
-        confirmButtonText: "Add Another Plan",
-        cancelButtonText: "Proceed to Payment",
-      });
-
-      if (isConfirmed) {
-        // Reset form for new plan
-        setServiceChoice("free");
-        setSelectedServices([]);
-        setCurrentPlanIndex(updatedPlans.length);
-      } else {
-        // Submit all plans to the API
-        await submitAllPlans(updatedPlans);
-      }
-    } catch (error) {
-      console.error("Submission error:", error);
-      Swal.fire(
-        "Error",
-        error.response?.data?.message || "An error occurred",
-        "error"
-      );
-    }
-  };
-
-  // Function to submit all plans at once
-  const submitAllPlans = async (plansToSubmit) => {
-    try {
+      // Make the API call
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}createPlan`,
-        { plans: plansToSubmit },
+        requestBody,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -701,44 +553,17 @@ const AgreementForm = () => {
         }
       );
 
+      // Handle successful response
       if (response.status === 200) {
-        Swal.fire("Success", "All plans created successfully", "success");
+        Swal.fire("Success", "Plan created successfully", "success");
         navigate("/profile");
       } else {
-        throw new Error(response.data.message || "Failed to create plans");
+        throw new Error(response.data.message || "Failed to create plan");
       }
     } catch (error) {
-      console.error("Plan submission error:", error);
-      Swal.fire(
-        "Error",
-        error.response?.data?.message || "Failed to create plans",
-        "error"
-      );
+      console.error("Submission error:", error);
+      Swal.fire("Error", error.response.data.message, "error");
     }
-  };
-
-  const removePlan = (index) => {
-    const updatedPlans = plans.filter((_, i) => i !== index);
-    setPlans(updatedPlans);
-    if (currentPlanIndex >= updatedPlans.length) {
-      setCurrentPlanIndex(updatedPlans.length - 1);
-    }
-  };
-
-  const editPlan = (index) => {
-    const planToEdit = plans[index];
-    setServiceChoice(planToEdit.serviceChoice);
-    setDeliveryPreference(planToEdit.deliveryPreference);
-    setSelectedServices(
-      planToEdit.individualBusinessServices ||
-        planToEdit.businessServices ||
-        planToEdit.institutionalServices ||
-        []
-    );
-    setCurrentPlanIndex(index);
-
-    // Remove the plan being edited from the plans array
-    removePlan(index);
   };
 
   const hasUserTakenPlan = async () => {
@@ -751,31 +576,10 @@ const AgreementForm = () => {
       }
     );
     if (response.status === 200) {
-      setHasTakenPlan(response.data.activePlans);
-
-      // Extract all service IDs with their positions
-      let takenServices = [];
-      response.data.activePlans.forEach((plan) => {
-        if (plan.serviceChoice === "individual") {
-          plan.individualBusinessServices.forEach((s, idx) => {
-            takenServices.push({ id: s._id, position: idx });
-          });
-        } else if (plan.serviceChoice === "business") {
-          plan.businessServices.forEach((s, idx) => {
-            takenServices.push({ id: s._id, position: idx });
-          });
-        } else if (plan.serviceChoice === "institutional") {
-          plan.institutionalServices.forEach((s, idx) => {
-            takenServices.push({ id: s._id, position: idx });
-          });
-        }
-      });
-
-      // Sort by position to maintain tier order
-      takenServices.sort((a, b) => a.position - b.position);
-
-      // Set selected services in correct order
-      setSelectedServices(takenServices.map((s) => s.id));
+      if (response.data.hasPlan) {
+        setHasTakenPlan(response.data.plan);
+        // navigate("/profile");
+      }
     }
   };
 
@@ -833,19 +637,6 @@ const AgreementForm = () => {
 
     return num.toFixed(2);
   };
-
-  const hasTakenFreePlan = hasTakenPlan?.some(
-    (plan) => plan.serviceChoice === "free"
-  );
-  const hasTakenIndividualPlan = hasTakenPlan?.some(
-    (plan) => plan.serviceChoice === "individual"
-  );
-  const hasTakenBusinessPlan = hasTakenPlan?.some(
-    (plan) => plan.serviceChoice === "business"
-  );
-  const hasTakenInstitutionalPlan = hasTakenPlan?.some(
-    (plan) => plan.serviceChoice === "institutional"
-  );
 
   return (
     <div
@@ -983,8 +774,10 @@ const AgreementForm = () => {
                     style={{
                       width: "48px",
                       height: "48px",
-                      background:
-                        hasTakenFreePlan || serviceChoice === "free"
+                      backgroundColor:
+                        hasTakenPlan?.serviceChoice === "free"
+                          ? "linear-gradient(135deg, #00833D, #000000)"
+                          : serviceChoice === "free"
                           ? "linear-gradient(135deg, #00833D, #000000)"
                           : "#e0e0e0",
                       borderRadius: "12px",
@@ -1037,7 +830,9 @@ const AgreementForm = () => {
                       style={{
                         margin: 0,
                         color:
-                          hasTakenFreePlan || serviceChoice === "free"
+                          hasTakenPlan?.serviceChoice === "free"
+                            ? "#00833D" // Dark green from gradient
+                            : serviceChoice === "free"
                             ? "#00833D"
                             : "#2c3e50",
                         fontSize: "20px",
@@ -1062,8 +857,7 @@ const AgreementForm = () => {
                 {/* Price Display */}
                 <div
                   style={{
-                    background:
-                      "linear-gradient(135deg, rgba(0, 131, 61, 0.1), rgba(0, 0, 0, 0.1))",
+                    background: `linear-gradient(135deg, rgba(0, 131, 61, 0.1), rgba(0, 0, 0, 0.1))`,
                     padding: "12px",
                     borderRadius: "8px",
                     marginBottom: "20px",
@@ -1086,8 +880,9 @@ const AgreementForm = () => {
                       color: "#00833D",
                     }}
                   >
-                    {hasTakenFreePlan
-                      ? "Already Subscribed"
+                    {hasTakenPlan?.serviceChoice === "free"
+                      ? "Active until " +
+                        new Date(hasTakenPlan.endDate).toLocaleDateString()
                       : "No credit card required"}
                   </p>
                 </div>
@@ -1141,7 +936,7 @@ const AgreementForm = () => {
                             flexShrink: 0,
                           }}
                         >
-                          ✓
+                          {"✓"}
                         </span>
                         <span style={{ color: "#34495e", lineHeight: "1.5" }}>
                           {feature.name}
@@ -1155,15 +950,19 @@ const AgreementForm = () => {
                 <div
                   style={{
                     background:
-                      hasTakenFreePlan || serviceChoice === "free"
+                      hasTakenPlan?.serviceChoice === "free"
+                        ? "linear-gradient(135deg, #00833D, #000000)"
+                        : serviceChoice === "free"
                         ? "linear-gradient(135deg, #00833D, #000000)"
                         : "transparent",
                     color:
-                      hasTakenFreePlan || serviceChoice === "free"
+                      hasTakenPlan?.serviceChoice === "free" ||
+                      serviceChoice === "free"
                         ? "white"
                         : "#00833D",
                     border:
-                      hasTakenFreePlan || serviceChoice === "free"
+                      hasTakenPlan?.serviceChoice === "free" ||
+                      serviceChoice === "free"
                         ? "none"
                         : `1px solid #00833D`,
                     padding: "12px",
@@ -1174,7 +973,7 @@ const AgreementForm = () => {
                     cursor: "pointer",
                   }}
                 >
-                  {hasTakenFreePlan
+                  {hasTakenPlan?.serviceChoice === "free"
                     ? "Your Current Plan"
                     : serviceChoice === "free"
                     ? "Current Selection"
@@ -1188,7 +987,7 @@ const AgreementForm = () => {
                 onClick={() => handleServiceChoice("individual")}
               >
                 {/* Ribbon for Popular Tag */}
-                {(hasTakenIndividualPlan || serviceChoice === "individual") && (
+                {serviceChoice === "individual" && (
                   <div
                     style={{
                       position: "absolute",
@@ -1220,7 +1019,7 @@ const AgreementForm = () => {
                       width: "48px",
                       height: "48px",
                       background:
-                        hasTakenIndividualPlan || serviceChoice === "individual"
+                        serviceChoice === "individual"
                           ? "linear-gradient(135deg, #00833D, #000000)"
                           : "#e0e0e0",
                       borderRadius: "12px",
@@ -1253,7 +1052,6 @@ const AgreementForm = () => {
                       style={{
                         margin: 0,
                         color:
-                          hasTakenIndividualPlan ||
                           serviceChoice === "individual"
                             ? "#00833D"
                             : "#2c3e50",
@@ -1279,8 +1077,7 @@ const AgreementForm = () => {
                 {/* Price Display */}
                 <div
                   style={{
-                    background:
-                      "linear-gradient(135deg, rgba(0, 131, 61, 0.1), rgba(0, 0, 0, 0.1))",
+                    background: `linear-gradient(135deg, rgba(0, 131, 61, 0.1), rgba(0, 0, 0, 0.1))`,
                     padding: "12px",
                     borderRadius: "8px",
                     marginBottom: "20px",
@@ -1395,7 +1192,12 @@ const AgreementForm = () => {
                         >
                           ✓
                         </span>
-                        <span style={{ color: "#34495e", lineHeight: "1.5" }}>
+                        <span
+                          style={{
+                            color: "#34495e",
+                            lineHeight: "1.5",
+                          }}
+                        >
                           {feature.name}
                         </span>
                       </li>
@@ -1407,15 +1209,12 @@ const AgreementForm = () => {
                 <div
                   style={{
                     background:
-                      hasTakenIndividualPlan || serviceChoice === "individual"
+                      serviceChoice === "individual"
                         ? "linear-gradient(135deg, #00833D, #000000)"
                         : "transparent",
-                    color:
-                      hasTakenIndividualPlan || serviceChoice === "individual"
-                        ? "white"
-                        : "#00833D",
+                    color: serviceChoice === "individual" ? "white" : "#00833D",
                     border:
-                      hasTakenIndividualPlan || serviceChoice === "individual"
+                      serviceChoice === "individual"
                         ? "none"
                         : `1px solid #00833D`,
                     padding: "12px",
@@ -1423,10 +1222,9 @@ const AgreementForm = () => {
                     textAlign: "center",
                     fontWeight: "600",
                     transition: "all 0.3s ease",
-                    cursor: "pointer",
                   }}
                 >
-                  {hasTakenIndividualPlan
+                  {hasTakenPlan?.serviceChoice === "individual"
                     ? "Your Current Plan"
                     : serviceChoice === "individual"
                     ? "Current Selection"
@@ -1439,26 +1237,6 @@ const AgreementForm = () => {
                 style={getCardStyle("business")}
                 onClick={() => handleServiceChoice("business")}
               >
-                {/* Ribbon for Popular Tag */}
-                {(hasTakenBusinessPlan || serviceChoice === "business") && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: "16px",
-                      right: "-30px",
-                      background: "linear-gradient(135deg, #00833D, #000000)",
-                      color: "white",
-                      padding: "4px 32px",
-                      fontSize: "12px",
-                      fontWeight: "600",
-                      transform: "rotate(45deg)",
-                      boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                    }}
-                  >
-                    RECOMMENDED
-                  </div>
-                )}
-
                 {/* Card Header */}
                 <div
                   style={{
@@ -1472,7 +1250,7 @@ const AgreementForm = () => {
                       width: "48px",
                       height: "48px",
                       background:
-                        hasTakenBusinessPlan || serviceChoice === "business"
+                        serviceChoice === "business"
                           ? "linear-gradient(135deg, #00833D, #000000)"
                           : "#e0e0e0",
                       borderRadius: "12px",
@@ -1483,7 +1261,13 @@ const AgreementForm = () => {
                       transition: "all 0.3s ease",
                     }}
                   >
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
                       <path
                         d="M3 21H21"
                         stroke="white"
@@ -1492,7 +1276,7 @@ const AgreementForm = () => {
                         strokeLinejoin="round"
                       />
                       <path
-                        d="M5 21V5C5 4.47 5.21 3.96 5.59 3.59C5.96 3.21 6.47 3 7 3H17C17.53 3 18.04 3.21 18.41 3.59C18.79 3.96 19 4.47 19 5V21"
+                        d="M5 21V5C5 4.46957 5.21071 3.96086 5.58579 3.58579C5.96086 3.21071 6.46957 3 7 3H17C17.5304 3 18.0391 3.21071 18.4142 3.58579C18.7893 3.96086 19 4.46957 19 5V21"
                         stroke="white"
                         strokeWidth="2"
                         strokeLinecap="round"
@@ -1512,9 +1296,7 @@ const AgreementForm = () => {
                       style={{
                         margin: 0,
                         color:
-                          hasTakenBusinessPlan || serviceChoice === "business"
-                            ? "#00833D"
-                            : "#2c3e50",
+                          serviceChoice === "business" ? "#00833D" : "#2c3e50",
                         fontSize: "20px",
                         fontWeight: "700",
                         transition: "all 0.3s ease",
@@ -1652,7 +1434,12 @@ const AgreementForm = () => {
                         >
                           ✓
                         </span>
-                        <span style={{ color: "#34495e", lineHeight: "1.5" }}>
+                        <span
+                          style={{
+                            color: "#34495e",
+                            lineHeight: "1.5",
+                          }}
+                        >
                           {feature.name}
                         </span>
                       </li>
@@ -1664,15 +1451,12 @@ const AgreementForm = () => {
                 <div
                   style={{
                     background:
-                      hasTakenBusinessPlan || serviceChoice === "business"
+                      serviceChoice === "business"
                         ? "linear-gradient(135deg, #00833D, #000000)"
                         : "transparent",
-                    color:
-                      hasTakenBusinessPlan || serviceChoice === "business"
-                        ? "white"
-                        : "#00833D",
+                    color: serviceChoice === "business" ? "white" : "#00833D",
                     border:
-                      hasTakenBusinessPlan || serviceChoice === "business"
+                      serviceChoice === "business"
                         ? "none"
                         : `1px solid #00833D`,
                     padding: "12px",
@@ -1680,10 +1464,9 @@ const AgreementForm = () => {
                     textAlign: "center",
                     fontWeight: "600",
                     transition: "all 0.3s ease",
-                    cursor: "pointer",
                   }}
                 >
-                  {hasTakenBusinessPlan
+                  {hasTakenPlan?.serviceChoice === "business"
                     ? "Your Current Plan"
                     : serviceChoice === "business"
                     ? "Current Selection"
@@ -1696,27 +1479,6 @@ const AgreementForm = () => {
                 style={getCardStyle("institutional")}
                 onClick={() => handleServiceChoice("institutional")}
               >
-                {/* Recommended Ribbon */}
-                {(hasTakenInstitutionalPlan ||
-                  serviceChoice === "institutional") && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: "16px",
-                      right: "-30px",
-                      background: "linear-gradient(135deg, #00833D, #000000)",
-                      color: "white",
-                      padding: "4px 32px",
-                      fontSize: "12px",
-                      fontWeight: "600",
-                      transform: "rotate(45deg)",
-                      boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                    }}
-                  >
-                    RECOMMENDED
-                  </div>
-                )}
-
                 {/* Card Header */}
                 <div
                   style={{
@@ -1730,7 +1492,6 @@ const AgreementForm = () => {
                       width: "48px",
                       height: "48px",
                       background:
-                        hasTakenInstitutionalPlan ||
                         serviceChoice === "institutional"
                           ? "linear-gradient(135deg, #00833D, #000000)"
                           : "#e0e0e0",
@@ -1750,7 +1511,7 @@ const AgreementForm = () => {
                       xmlns="http://www.w3.org/2000/svg"
                     >
                       <path
-                        d="M19 21V5C19 4.47 18.79 3.96 18.41 3.59C18.04 3.21 17.53 3 17 3H7C6.47 3 5.96 3.21 5.59 3.59C5.21 3.96 5 4.47 5 5V21M19 21H5M19 21H21V22H3V21H5M9 7H15M9 11H15M9 15H15"
+                        d="M19 21V5C19 4.46957 18.7893 3.96086 18.4142 3.58579C18.0391 3.21071 17.5304 3 17 3H7C6.46957 3 5.96086 3.21071 5.58579 3.58579C5.21071 3.96086 5 4.46957 5 5V21M19 21H5M19 21H21V22H3V21H5M9 7H15M9 11H15M9 15H15"
                         stroke="white"
                         strokeWidth="2"
                         strokeLinecap="round"
@@ -1763,7 +1524,6 @@ const AgreementForm = () => {
                       style={{
                         margin: 0,
                         color:
-                          hasTakenInstitutionalPlan ||
                           serviceChoice === "institutional"
                             ? "#00833D"
                             : "#2c3e50",
@@ -1904,7 +1664,12 @@ const AgreementForm = () => {
                         >
                           ✓
                         </span>
-                        <span style={{ color: "#34495e", lineHeight: "1.5" }}>
+                        <span
+                          style={{
+                            color: "#34495e",
+                            lineHeight: "1.5",
+                          }}
+                        >
                           {feature.name}
                         </span>
                       </li>
@@ -1916,17 +1681,12 @@ const AgreementForm = () => {
                 <div
                   style={{
                     background:
-                      hasTakenInstitutionalPlan ||
                       serviceChoice === "institutional"
                         ? "linear-gradient(135deg, #00833D, #000000)"
                         : "transparent",
                     color:
-                      hasTakenInstitutionalPlan ||
-                      serviceChoice === "institutional"
-                        ? "white"
-                        : "#00833D",
+                      serviceChoice === "institutional" ? "white" : "#00833D",
                     border:
-                      hasTakenInstitutionalPlan ||
                       serviceChoice === "institutional"
                         ? "none"
                         : `1px solid #00833D`,
@@ -1935,14 +1695,13 @@ const AgreementForm = () => {
                     textAlign: "center",
                     fontWeight: "600",
                     transition: "all 0.3s ease",
-                    cursor: "pointer",
                   }}
                 >
-                  {hasTakenInstitutionalPlan
+                  {hasTakenPlan?.serviceChoice === "institutional"
                     ? "Your Current Plan"
                     : serviceChoice === "institutional"
                     ? "Current Selection"
-                    : "Choose Institutional Services"}
+                    : "Choose Institution Services"}
                 </div>
               </div>
             </>
@@ -2079,133 +1838,8 @@ const AgreementForm = () => {
         </div>
       </div>
 
-      {/* Add a section to display selected plans */}
-      {plans.length > 0 && (
-        <div
-          style={{
-            marginBottom: "32px",
-            backgroundColor: "#ffffff",
-            padding: "24px",
-            borderRadius: "16px",
-            boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
-            border: "1px solid rgba(0, 0, 0, 0.05)",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              marginBottom: "24px",
-              paddingBottom: "16px",
-              borderBottom: "1px solid rgba(0, 0, 0, 0.05)",
-            }}
-          >
-            <div
-              style={{
-                width: "4px",
-                height: "24px",
-                background: "linear-gradient(135deg, #00833D, #000000)",
-                borderRadius: "2px",
-                marginRight: "12px",
-              }}
-            ></div>
-            <h5
-              style={{
-                margin: 0,
-                color: "#2c3e50",
-                fontSize: "18px",
-                fontWeight: "700",
-                letterSpacing: "0.5px",
-              }}
-            >
-              Selected Plans ({plans.length})
-            </h5>
-          </div>
-
-          {plans.map((plan, index) => (
-            <div
-              key={index}
-              style={{
-                padding: "16px",
-                marginBottom: "16px",
-                backgroundColor: "#f8f9fa",
-                borderRadius: "8px",
-                borderLeft: "4px solid #00833D",
-                position: "relative",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <div>
-                  <h4
-                    style={{
-                      margin: "0 0 8px 0",
-                      color: "#2c3e50",
-                      textTransform: "capitalize",
-                    }}
-                  >
-                    {plan.serviceChoice} Plan
-                  </h4>
-                  <p style={{ margin: "0 0 4px 0", color: "#7f8c8d" }}>
-                    <strong>Delivery:</strong> {plan.deliveryPreference}
-                  </p>
-                  <p style={{ margin: "0 0 4px 0", color: "#7f8c8d" }}>
-                    <strong>Services:</strong>{" "}
-                    {plan.individualBusinessServices?.length ||
-                      plan.businessServices?.length ||
-                      plan.institutionalServices?.length ||
-                      plan.freeOfferings?.length}{" "}
-                    selected
-                  </p>
-                  <p style={{ margin: "0", color: "#7f8c8d" }}>
-                    <strong>Total:</strong> ₹
-                    {plan.totalPrice.toLocaleString("en-IN")}
-                  </p>
-                </div>
-                <div>
-                  <button
-                    onClick={() => editPlan(index)}
-                    style={{
-                      background: "transparent",
-                      border: "1px solid #00833D",
-                      color: "#00833D",
-                      padding: "6px 12px",
-                      borderRadius: "4px",
-                      marginRight: "8px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => removePlan(index)}
-                    style={{
-                      background: "#e74c3c",
-                      border: "none",
-                      color: "white",
-                      padding: "6px 12px",
-                      borderRadius: "4px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Remove
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
       <form onSubmit={handleSubmit}>
-        {/* ... (keep all existing form elements) */}
-
-        {/* Update the submit button text based on context */}
+        {/* Add a submit button */}
         <div
           style={{
             marginTop: "32px",
@@ -2214,6 +1848,7 @@ const AgreementForm = () => {
         >
           <button
             type="submit"
+            disabled={hasTakenPlan?.hasPlan}
             style={{
               background: "linear-gradient(135deg, #00833D, #000000)",
               color: "white",
@@ -2238,43 +1873,8 @@ const AgreementForm = () => {
               },
             }}
           >
-            {plans.length > 0
-              ? "Add Another Plan"
-              : serviceChoice === "free"
-              ? "Get Free Plan"
-              : "Add Plan"}
+            {serviceChoice === "free" ? "Get Free Plan" : "Proceed to Payment"}
           </button>
-
-          {/* Add a separate button to submit all plans */}
-          {plans.length > 0 && (
-            <button
-              type="button"
-              onClick={() => submitAllPlans(plans)}
-              style={{
-                background: "linear-gradient(135deg, #000000, #00833D)",
-                color: "white",
-                border: "none",
-                padding: "14px 28px",
-                borderRadius: "8px",
-                fontSize: "16px",
-                fontWeight: "600",
-                cursor: "pointer",
-                transition: "all 0.3s ease",
-                boxShadow: "0 4px 12px rgba(0, 131, 61, 0.2)",
-                marginLeft: "16px",
-                ":hover": {
-                  transform: "translateY(-2px)",
-                  boxShadow: "0 6px 16px rgba(0, 131, 61, 0.3)",
-                },
-              }}
-            >
-              Proceed to Payment (₹
-              {plans
-                .reduce((sum, plan) => sum + plan.totalPrice, 0)
-                .toLocaleString("en-IN")}
-              )
-            </button>
-          )}
         </div>
       </form>
     </div>
