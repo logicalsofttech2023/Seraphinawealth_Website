@@ -3098,7 +3098,7 @@ span.author_designation{
 .contact_block_one{
     position: relative;
     text-align: center;
-    padding: 50px;
+    padding: 20px;
     padding-top: 0;
     margin-top: 50px;
     border-radius: 10px;
@@ -5322,4 +5322,35 @@ h6 {
   position: absolute;
   left: 0;
   top: 0;
+}
+
+
+/* Confirm Button (Add Another Plan) */
+.swal2-styled.confirm-gradient-button {
+  background: linear-gradient(135deg, #00833D, #00612D) !important;
+  border: none !important;
+  color: white !important;
+  padding: 10px 20px;
+  font-weight: 600;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+/* Cancel Button (Proceed to Payment) */
+.swal2-styled.cancel-gradient-button {
+  background: linear-gradient(135deg, #00833D, #333333) !important;
+  border: none !important;
+  color: white !important;
+  padding: 10px 20px;
+  font-weight: 600;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+/* Hover effects for both buttons */
+.swal2-styled.confirm-gradient-button:hover,
+.swal2-styled.cancel-gradient-button:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }

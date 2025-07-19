@@ -1,13 +1,14 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { MobileMenuContext } from "./MobileMenuContext";
 import logo from "./logo.png"; // Adjust the path as necessary
+import axios from "axios";
 
 const Header = () => {
   const location = useLocation();
   const token = localStorage.getItem("token");
   const { isMobileMenuVisible, setMobileMenuVisible } = useContext(MobileMenuContext);
-
+  const [data, setData] = useState(null);
   // Common menu items to maintain consistency
   const menuItems = [
     { path: "/", label: "Home" },
@@ -16,6 +17,22 @@ const Header = () => {
     { path: "/agreementForm", label: "Our Services" },
     { path: "/contact", label: "Contact Us" },
   ];
+
+  const fetchData = async () => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}getBanner`
+      );
+      console.log("Data fetched successfully:", response.data);
+      setData(response.data.data);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   return (
     <>
@@ -34,7 +51,7 @@ const Header = () => {
               color: "#555",
               lineHeight: "1.3"
             }}>
-              श्रियः पतिं यज्ञपतिं यज्ञगोप्तारमीश्वरम्। यज्ञपुरुषं यज्ञेशं यज्ञवाहनं नमाम्यहम्॥
+              {data?.shlok}
             </div>
           </div>
         </div>

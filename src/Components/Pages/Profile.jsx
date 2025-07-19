@@ -158,8 +158,6 @@ const Profile = () => {
   }, []);
 
   const hasUserTakenPlan = async () => {
-    console.log("bsedghj");
-    
     const response = await axios.get(
       `${import.meta.env.VITE_API_URL}hasUserTakenPlan`,
       {
@@ -168,25 +166,19 @@ const Profile = () => {
         },
       }
     );
-    if (response.status === 200) {
-      console.log(response.data.message);
-      
-      if (response.data.hasPlan === false) {
-        setHasTakenPlan(response.data.plan);
-        // navigate("/profile");
-        if (response.data.message === "User has not taken any plan.") {
-          Swal.fire({
-            title: "Error",
-            text: "You have not taken any plan yet.",
-            icon: "error",
-            confirmButtonText: "OK",
-          }).then((result) => {
-            if (result.isConfirmed) {
-              Navigate("/agreementForm");
-            }
-          });
+    if (response.status === 200 && response.data.hasPlan === false) {
+      setHasTakenPlan(response.data.plans);
+
+      Swal.fire({
+        title: "Error",
+        text: "You have not taken any plan yet.",
+        icon: "error",
+        confirmButtonText: "OK",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          Navigate("/agreementForm");
         }
-      }
+      });
     }
   };
 

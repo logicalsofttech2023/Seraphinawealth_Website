@@ -6,11 +6,15 @@ import { Box } from "@mui/material";
 const About = () => {
   const [about, setAbout] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
+
   const fetchAbout = async () => {
     try {
       const response = await axios.get(
         `${import.meta.env.VITE_API_URL}getPolicyByType?type=about`
       );
+
       console.log(response);
       if (response.status === 200) {
         setAbout(response.data.policy);
@@ -22,9 +26,28 @@ const About = () => {
     }
   };
 
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}getOurObjectives`
+      );
+      if (response.status === 200) {
+        console.log("Our Objectives data fetched successfully:", response.data);
+        setData(response.data.data[0]);
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      setError("Failed to load Our Objectives data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     window.scrollTo(0, 0);
     fetchAbout();
+    fetchData();
   }, []);
   return (
     <>
@@ -176,13 +199,16 @@ const About = () => {
           className="why_choose_us about_page aos-init aos-animate"
           data-aos="fade-up"
           data-aos-easing="linear"
-          data-aos-duration={500}
+          data-aos-duration="500"
         >
           <div className="shape_circle float-bob-y">
-            <img src="/assets/images/icons/ring_shape.png" alt />
+            <img src="/assets/images/icons/ring_shape.png" alt="Ring Shape" />
           </div>
           <div className="mouse_pointer float-bob-x">
-            <img src="/assets/images/icons/mouse-pointer.png" alt />
+            <img
+              src="/assets/images/icons/mouse-pointer.png"
+              alt="Mouse Pointer"
+            />
           </div>
           <div className="container mb-5 mt-5">
             <div className="border_top" />
@@ -190,110 +216,35 @@ const About = () => {
               <div className="tag_text">
                 <h6>Our Objectives</h6>
               </div>
-              <h3>Driving Value Through Strategic Financial Empowerment</h3>
+              <h3>{data?.heading}</h3>
             </div>
             <div className="row">
-              <div className="col-xl-4 col-md-6 col-sm-12 mb-3">
-                <div
-                  className="why_choose_block_two mb_40 aos-init aos-animate"
-                  data-aos="fade-right"
-                  data-aos-easing="linear"
-                  data-aos-duration={500}
-                >
-                  <div className="choose_icon">
-                    <i className="icon-28" />
-                  </div>
-                  {loading ? (
-                    <Box>
-                      <Skeleton animation="wave" height={20} width="100%" />
-                      <Skeleton animation="wave" height={20} width="90%" />
-                      <Skeleton animation="wave" height={20} width="95%" />
-                    </Box>
-                  ) : (
-                    <p>
-                      To provide financial advisory services, including investment
-                      planning, risk management, tax planning, to individuals,
-                      businesses, and institutions.
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="col-xl-4 col-md-6 col-sm-12 mb-3">
-                <div
-                  className="why_choose_block_two mb_40 hover aos-init aos-animate"
-                  data-aos="fade-up"
-                  data-aos-easing="linear"
-                  data-aos-duration={500}
-                >
-                  <div className="choose_icon">
-                    <i className="icon-27" />
-                  </div>
-                  {loading ? (
-                    <Box>
-                      <Skeleton animation="wave" height={20} width="100%" />
-                      <Skeleton animation="wave" height={20} width="90%" />
-                      <Skeleton animation="wave" height={20} width="95%" />
-                    </Box>
-                  ) : (
-                    <p>
-                      To act as consultants and advisors for corporate finance,
-                      mergers and acquisitions, financial restructuring, capital
-                      raising, and strategic financial planning.
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="col-xl-4 col-md-6 col-sm-12">
-                <div
-                  className="why_choose_block_two mb_40 aos-init aos-animate"
-                  data-aos="fade-left"
-                  data-aos-easing="linear"
-                  data-aos-duration={500}
-                >
-                  <div className="choose_icon">
-                    <i className="icon-26" />
-                  </div>
-                  {loading ? (
-                    <Box>
-                      <Skeleton animation="wave" height={20} width="100%" />
-                      <Skeleton animation="wave" height={20} width="90%" />
-                      <Skeleton animation="wave" height={20} width="95%" />
-                    </Box>
-                  ) : (
-                    <p>
-                      To conduct financial analysis, market research, feasibility
-                      studies and due diligence for individuals, corporates,
-                      startups and institutions.
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="col-xl-4 col-md-6 col-sm-12">
-                <div
-                  className="why_choose_block_two mb_40 aos-init aos-animate"
-                  data-aos="fade-right"
-                  data-aos-easing="linear"
-                  data-aos-duration={500}
-                >
-                  <div className="choose_icon">
-                    <i className="icon-25" />
-                  </div>
-                  {loading ? (
-                    <Box>
-                      <Skeleton animation="wave" height={20} width="100%" />
-                      <Skeleton animation="wave" height={20} width="90%" />
-                      <Skeleton animation="wave" height={20} width="95%" />
-                    </Box>
-                  ) : (
-                    <p>
-                      To facilitate financial literacy and awareness programs,
-                      including seminars, workshops, and training sessions on
-                      investment strategies, financial risk management, and
-                      compliance.
-                    </p>
-                  )}
-                </div>
-              </div>
+              {loading
+                ? Array(3)
+                    .fill(0)
+                    .map((_, i) => (
+                      <div key={i} className="col-xl-4 col-md-6 col-sm-12 mb-3">
+                        <Skeleton animation="wave" height={200} />
+                      </div>
+                    ))
+                : data?.content?.map((objective, index) => (
+                    <div
+                      key={index}
+                      className="col-xl-4 col-md-6 col-sm-12 mb-3"
+                    >
+                      <div
+                        className="why_choose_block_two mb_40 aos-init aos-animate"
+                        data-aos="fade-right"
+                        data-aos-easing="linear"
+                        data-aos-duration="500"
+                      >
+                        <div className="choose_icon">
+                          <i className={`icon-${index + 1}`} />
+                        </div>
+                        <p>{objective}</p>
+                      </div>
+                    </div>
+                  ))}
             </div>
           </div>
         </section>

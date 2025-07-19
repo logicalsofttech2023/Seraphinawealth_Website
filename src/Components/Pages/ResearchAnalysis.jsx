@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Skeleton from '@mui/material/Skeleton';
 import Box from '@mui/material/Box';
+import { FiDownload, FiX } from 'react-icons/fi';
 
 const ResearchAnalysis = () => {
   const [data, setData] = useState([]);
@@ -9,6 +10,8 @@ const ResearchAnalysis = () => {
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [timeFilter, setTimeFilter] = useState('all'); // all, daily, weekly, monthly, yearly
   const [loading, setLoading] = useState(true);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [showPdfViewer, setShowPdfViewer] = useState(false);
 
   const fetchResearchDocs = async () => {
     try {
@@ -17,12 +20,6 @@ const ResearchAnalysis = () => {
         const docs = Array.isArray(res.data.data) ? res.data.data : [res.data.data];
         setData(docs);
         setFilteredData(docs);
-
-        // Set latest document from first item
-        if (docs.length > 0 && docs[0].documents?.length > 0) {
-          const latestDoc = docs[0].documents[docs[0].documents.length - 1];
-          setSelectedDoc(latestDoc);
-        }
       }
     } catch (error) {
       console.error("Error fetching research documents:", error);
@@ -87,18 +84,25 @@ const ResearchAnalysis = () => {
     }
 
     setFilteredData(filtered);
-    
-    // Update selected document if filtered results change
-    if (filtered.length > 0 && filtered[0].documents?.length > 0) {
-      const latestDoc = filtered[0].documents[filtered[0].documents.length - 1];
-      setSelectedDoc(latestDoc);
-    } else {
-      setSelectedDoc(null);
-    }
   }, [timeFilter, data]);
 
   const renderDescription = (htmlContent) => {
     return { __html: htmlContent };
+  };
+
+  const handlePdfClick = (pdfUrl) => {
+    setPdfLoading(true);
+    setSelectedDoc(pdfUrl);
+    setShowPdfViewer(true);
+  };
+
+  const closePdfViewer = () => {
+    setShowPdfViewer(false);
+    setPdfLoading(false);
+  };
+
+  const handleDownloadPdf = (pdfUrl) => {
+    window.open(`${import.meta.env.VITE_FILE_URL}${pdfUrl}`, '_blank');
   };
 
   const fileUrl = import.meta.env.VITE_FILE_URL;
@@ -122,9 +126,6 @@ const ResearchAnalysis = () => {
           </Box>
         </Box>
         
-        {/* Document viewer skeleton */}
-        <Skeleton variant="rectangular" width="100%" height={700} sx={{ mb: 4, borderRadius: 1 }} />
-        
         {/* Document list skeletons */}
         {[...Array(3)].map((_, index) => (
           <Box key={index} sx={{ mb: 3, p: 3, border: '1px solid #e2e8f0', borderRadius: 1, bgcolor: 'white' }}>
@@ -144,6 +145,134 @@ const ResearchAnalysis = () => {
 
   return (
     <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}>
+      {/* PDF Viewer Modal */}
+      {showPdfViewer && selectedDoc && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.9)',
+          zIndex: 1000,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          padding: '16px'
+        }}>
+          <div style={{
+            width: '100%',
+            maxWidth: '1200px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '12px',
+            padding: '12px',
+            backgroundColor: 'rgba(255,255,255,0.1)',
+            borderRadius: '8px'
+          }}>
+            <span style={{ 
+              color: '#fff',
+              fontSize: '14px',
+              fontWeight: '500',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              maxWidth: '70%'
+            }}>
+              {selectedDoc.split('/').pop()}
+            </span>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={() => handleDownloadPdf(selectedDoc)}
+                style={{
+                  backgroundColor: 'rgba(255,255,255,0.1)',
+                  color: '#fff',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  borderRadius: '6px',
+                  padding: '8px 16px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  ':hover': {
+                    backgroundColor: 'rgba(255,255,255,0.2)'
+                  }
+                }}
+              >
+                <FiDownload size={16} />
+                <span>Download</span>
+              </button>
+              <button 
+                onClick={closePdfViewer}
+                style={{
+                  backgroundColor: 'rgba(255,255,255,0.1)',
+                  color: '#fff',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  borderRadius: '6px',
+                  padding: '8px 16px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  ':hover': {
+                    backgroundColor: 'rgba(255,255,255,0.2)'
+                  }
+                }}
+              >
+                <FiX size={16} />
+                <span>Close</span>
+              </button>
+            </div>
+          </div>
+          <div style={{ 
+            backgroundColor: '#fff',
+            borderRadius: '8px',
+            width: '100%',
+            maxWidth: '1200px',
+            height: 'calc(100% - 60px)',
+            overflow: 'hidden',
+            position: 'relative'
+          }}>
+            {pdfLoading && (
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'rgba(255,255,255,0.8)'
+              }}>
+                <div style={{
+                  width: '48px',
+                  height: '48px',
+                  border: '4px solid rgba(0,0,0,0.1)',
+                  borderTopColor: '#00833D',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite'
+                }}></div>
+              </div>
+            )}
+            <iframe 
+              src={`${fileUrl}${selectedDoc}`} 
+              title="PDF Viewer"
+              style={{ 
+                width: '100%',
+                height: '100%',
+                border: 'none',
+                visibility: pdfLoading ? 'hidden' : 'visible'
+              }}
+              onLoad={() => setPdfLoading(false)}
+            ></iframe>
+          </div>
+        </div>
+      )}
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <h2 style={{ fontSize: '2rem', fontWeight: '700', color: '#2d3748', margin: 0 }}>
           Research Analysis
@@ -233,17 +362,6 @@ const ResearchAnalysis = () => {
         </div>
       </div>
 
-      {/* Show selected document in full screen */}
-      {selectedDoc && (
-        <div style={{ marginBottom: '2rem', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', borderRadius: '0.5rem', overflow: 'hidden' }}>
-          <iframe
-            src={`${fileUrl}${selectedDoc}`}
-            title="Research Document Viewer"
-            style={{ width: '100%', height: '700px', border: 'none', backgroundColor: '#f8fafc' }}
-          />
-        </div>
-      )}
-
       {filteredData.length === 0 ? (
         <p style={{ 
           textAlign: 'center', 
@@ -292,10 +410,10 @@ const ResearchAnalysis = () => {
                 {item.documents?.map((doc, idx) => (
                   <button
                     key={idx}
-                    onClick={() => setSelectedDoc(doc)}
+                    onClick={() => handlePdfClick(doc)}
                     style={{
-                      background: selectedDoc === doc ? 'linear-gradient(135deg, #00833D, #000000)' : '#edf2f7',
-                      color: selectedDoc === doc ? '#fff' : '#2d3748',
+                      background: '#edf2f7',
+                      color: '#2d3748',
                       padding: '0.5rem 1rem',
                       borderRadius: '0.375rem',
                       border: 'none',
@@ -308,9 +426,6 @@ const ResearchAnalysis = () => {
                     }}
                   >
                     <span>Document {idx + 1}</span>
-                    {selectedDoc === doc && (
-                      <span style={{ fontSize: '0.75rem' }}>(Viewing)</span>
-                    )}
                   </button>
                 ))}
               </div>

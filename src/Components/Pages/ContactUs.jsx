@@ -11,8 +11,9 @@ const ContactUs = () => {
     email: "",
     message: "",
   });
+  const [data, setData] = useState(null);
 
-  // Handle input changes
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
@@ -21,7 +22,6 @@ const ContactUs = () => {
     }));
   };
 
-  // Handle form submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -57,10 +57,24 @@ const ContactUs = () => {
     }
   };
 
+
+  const fetchData = async () => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}getContactUs`
+      );
+      console.log("Data fetched successfully:", response.data);
+      setData(response.data.data);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [])
-  
+    fetchData();
+  }, []);
+
   return (
     <div>
       <section
@@ -128,7 +142,7 @@ const ContactUs = () => {
                 </div>
                 <div className="contact_block_text">
                   <p>
-                    Panjot, 3116 Kataula, Sardar, Mandi 175005, Himachal Pradesh
+                    {data?.officeLocation}
                   </p>
                 </div>
               </div>
@@ -148,7 +162,7 @@ const ContactUs = () => {
                 </div>
                 <div className="contact_block_text">
                   <p>
-                    <a href="#">info@seraphinawealth.com</a> <br />
+                    <a href="#">{data?.email}</a> <br />
                   </p>
                 </div>
               </div>
@@ -169,7 +183,7 @@ const ContactUs = () => {
                 <div className="contact_block_text">
                   <p>
                     Emergency Cases <br />
-                    <a href="#">+(208) 555-0112 (24/7)</a>
+                    <a href="#">+91 {data?.phone}</a>
                   </p>
                 </div>
               </div>

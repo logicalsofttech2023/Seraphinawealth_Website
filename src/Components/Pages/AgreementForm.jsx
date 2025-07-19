@@ -34,6 +34,7 @@ const AgreementForm = () => {
   const [planAmount, setPlanAmount] = useState({});
   const [plans, setPlans] = useState([]);
   const [currentPlanIndex, setCurrentPlanIndex] = useState(0);
+  const [studentStatus, setStudentStatus] = useState("no");
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -45,14 +46,11 @@ const AgreementForm = () => {
   }, []);
 
   useEffect(() => {
-    // Fetch plan amount details whenever service choice changes
     const fetchPlanAmount = async () => {
       try {
         const response = await axios.get(
           `${import.meta.env.VITE_API_URL}getPlanAmountInUser`
         );
-        console.log(response);
-
         setPlanAmount(response.data.data);
       } catch (err) {
         setError("Failed to fetch plan amount");
@@ -63,27 +61,59 @@ const AgreementForm = () => {
   }, [serviceChoice]);
 
   useEffect(() => {
-    // Calculate total amount whenever selected services change
-    const serviceCost = planAmount?.basePrice || 150000; // Default to 1.5L if planAmount not loaded
-    let additionalAmount = selectedServices.length * serviceCost;
-
-    // Add platform fee if enabled
-    if (planAmount?.platformFeeStatus) {
-      additionalAmount += additionalAmount * (planAmount?.platformFee / 100);
-    }
-
-    const base = baseAmount[serviceChoice] || 0;
-    let total = base + additionalAmount;
-
-    // Add GST if enabled
-    if (planAmount?.gstStatus) {
-      total += total * ((planAmount?.gst || 18) / 100);
-    }
-
-    setTotalAmount(total);
-    setTotalWithGST(total);
+    calculateTotalAmount();
   }, [selectedServices, serviceChoice, baseAmount, planAmount]);
 
+  const calculateTotalAmount = () => {
+    // Initialize tieredPrices with default values
+    let tieredPrices = [];
+    let tieredPercentages = [100, 60, 40, 40]; // Default percentages
+
+    // Special pricing for individual plan
+    if (serviceChoice === "individual") {
+      if (studentStatus === "yes") {
+        tieredPrices = [150000, 100000, 100000, 100000];
+      } else {
+        // Get tiered percentages from planAmount or use defaults
+        tieredPercentages = planAmount?.selectPercentage || [100, 60, 40, 40];
+
+        // Get base price from planAmount or use default (250000)
+        const basePrice = planAmount?.basePrice || 250000;
+
+        // Calculate tiered prices based on base price and percentages
+        tieredPrices = tieredPercentages.map((percent) =>
+          Math.round(basePrice * (percent / 100))
+        );
+      }
+    } else {
+      // For non-individual plans, set default prices if needed
+      const basePrice = planAmount?.basePrice || 100000; // Default base price for other plans
+      tieredPrices = tieredPercentages.map((percent) =>
+        Math.round(basePrice * (percent / 100))
+      );
+    }
+
+    // Calculate total base amount based on order of selected services
+    let calculatedTotal = selectedServices.reduce((sum, _, index) => {
+      return sum + (tieredPrices[index] || 0);
+    }, 0);
+
+    // Add platform fee if enabled
+    let platformFeeAmount = 0;
+    if (planAmount?.platformFeeStatus) {
+      platformFeeAmount = calculatedTotal * (planAmount.platformFee / 100);
+      calculatedTotal += platformFeeAmount;
+    }
+
+    // Calculate GST if enabled
+    let gstAmount = 0;
+    if (planAmount?.gstStatus) {
+      gstAmount = calculatedTotal * (planAmount.gst / 100);
+    }
+
+    setTotalAmount(calculatedTotal);
+    setTotalWithGST(calculatedTotal + gstAmount);
+  };
   const fetchFreeServices = async () => {
     try {
       setLoading((prev) => ({ ...prev, free: true }));
@@ -168,26 +198,10 @@ const AgreementForm = () => {
   };
 
   const handleServiceSelection = (serviceId) => {
-    // Check if this service is from an active plan
-    const isFromActivePlan = hasTakenPlan.some((plan) => {
-      if (plan.serviceChoice === "individual") {
-        return plan.individualBusinessServices.some((s) => s._id === serviceId);
-      } else if (plan.serviceChoice === "business") {
-        return plan.businessServices.some((s) => s._id === serviceId);
-      } else if (plan.serviceChoice === "institutional") {
-        return plan.institutionalServices.some((s) => s._id === serviceId);
-      }
-      return false;
-    });
-
-    if (isFromActivePlan) {
-      return; // Don't allow deselecting services from active plans
-    }
     setSelectedServices((prev) => {
       if (prev.includes(serviceId)) {
         return prev.filter((id) => id !== serviceId);
       } else {
-        // Max 4 services can be selected (6L total = 4 * 1.5L)
         if (prev.length < 4) {
           return [...prev, serviceId];
         }
@@ -241,63 +255,91 @@ const AgreementForm = () => {
       );
     }
 
-    // Fixed tiered prices
-    const tieredPrices = [250000, 150000, 100000, 100000];
-    const tieredPercentages = [100, 60, 40, 40];
+    // Initialize tieredPrices and tieredPercentages with default values
+    let tieredPrices = [];
+    let tieredPercentages = [100, 60, 40, 40]; // Default percentages
 
-    // Separate services from active plans and new selections
-    const activePlanServices = hasTakenPlan.flatMap((plan) => {
-      if (plan.serviceChoice === "individual") {
-        return plan.individualBusinessServices.map((s) => s._id);
-      } else if (plan.serviceChoice === "business") {
-        return plan.businessServices.map((s) => s._id);
-      } else if (plan.serviceChoice === "institutional") {
-        return plan.institutionalServices.map((s) => s._id);
+    // Get tiered prices and percentages - special case for individual plan
+    if (serviceChoice === "individual") {
+      if (studentStatus === "yes") {
+        tieredPrices = [150000, 100000, 100000, 100000];
+        tieredPercentages = [100, 67, 67, 67];
+      } else {
+        // Get tiered percentages from planAmount or use defaults
+        tieredPercentages = planAmount?.selectPercentage || [100, 60, 40, 40];
+
+        // Get base price from planAmount or use default (250000)
+        const basePrice = planAmount?.basePrice || 250000;
+
+        // Calculate tiered prices based on base price and percentages
+        tieredPrices = tieredPercentages.map((percent) =>
+          Math.round(basePrice * (percent / 100))
+        );
       }
-      return [];
-    });
+    } else {
+      // For non-individual plans, set default prices if needed
+      // You might want to set these differently based on your business logic
+      const basePrice = planAmount?.basePrice || 100000; // Default base price for other plans
+      tieredPrices = tieredPercentages.map((percent) =>
+        Math.round(basePrice * (percent / 100))
+      );
+    }
 
-    const newlySelectedServices = selectedServices.filter(
-      (id) => !activePlanServices.includes(id)
-    );
-
-    // Calculate total amount - this is the key fix
-    let totalAmount = 0;
-    let priceIndex = 0;
-
-    selectedServices.forEach((serviceId, index) => {
-      // Use the tiered price based on overall position (0-3)
-      if (priceIndex < tieredPrices.length) {
-        totalAmount += tieredPrices[priceIndex];
-        priceIndex++;
-      }
-    });
+    // Calculate total base amount based on order of selected services
+    let calculatedTotal = selectedServices.reduce((sum, _, index) => {
+      return sum + (tieredPrices[index] || 0);
+    }, 0);
 
     // Add platform fee if enabled
     let platformFeeAmount = 0;
     if (planAmount?.platformFeeStatus) {
-      platformFeeAmount = totalAmount * (planAmount.platformFee / 100);
-      totalAmount += platformFeeAmount;
+      platformFeeAmount = calculatedTotal * (planAmount.platformFee / 100);
+      calculatedTotal += platformFeeAmount;
     }
 
     // Calculate GST if enabled
     let gstAmount = 0;
     if (planAmount?.gstStatus) {
-      gstAmount = totalAmount * (planAmount.gst / 100);
+      gstAmount = calculatedTotal * (planAmount.gst / 100);
     }
 
-    const totalWithGST = totalAmount + gstAmount;
+    const totalWithGST = calculatedTotal + gstAmount;
+
+    // Determine which services are disabled (already purchased)
+    const disabledServices = services.filter((service) =>
+      hasTakenPlan.some(
+        (plan) =>
+          (plan.individualBusinessServices || []).some(
+            (s) => s._id === service._id
+          ) ||
+          (plan.businessServices || []).some((s) => s._id === service._id) ||
+          (plan.institutionalServices || []).some((s) => s._id === service._id)
+      )
+    );
+
+    // Calculate the number of already purchased services
+    const purchasedServicesCount = disabledServices.length;
+
+    // Calculate the effective position for new selections
+    const getEffectivePosition = (indexInSelected) => {
+      return indexInSelected + purchasedServicesCount;
+    };
 
     return (
       <div style={{ marginTop: "20px" }}>
         {services.map((service) => {
           const isSelected = selectedServices.includes(service._id);
-          const isFromActivePlan = activePlanServices.includes(service._id);
-          const positionInSelected = selectedServices.indexOf(service._id);
-          const basePrice =
-            isSelected && positionInSelected < tieredPrices.length
-              ? tieredPrices[positionInSelected]
-              : 0;
+          const isDisabled =
+            disabledServices.some((s) => s._id === service._id) ||
+            (selectedServices.length >= 4 - purchasedServicesCount &&
+              !isSelected);
+          const indexInSelected = selectedServices.indexOf(service._id);
+
+          // Calculate base price based on effective position in the tier
+          const effectivePosition = isSelected
+            ? getEffectivePosition(indexInSelected)
+            : getEffectivePosition(selectedServices.length);
+          const basePrice = tieredPrices[effectivePosition] || 0;
 
           // Calculate platform fee for this service if enabled
           let servicePlatformFee = 0;
@@ -315,6 +357,10 @@ const AgreementForm = () => {
 
           const serviceTotal = serviceSubtotal + serviceGst;
 
+          const isPurchased = disabledServices.some(
+            (s) => s._id === service._id
+          );
+
           return (
             <div
               key={service._id}
@@ -325,28 +371,48 @@ const AgreementForm = () => {
                 padding: "10px 14px",
                 backgroundColor: isSelected
                   ? "rgba(0, 131, 61, 0.05)"
+                  : isPurchased
+                  ? "rgba(0, 0, 0, 0.03)"
                   : "#f9f9f9",
                 borderRadius: "8px",
                 border: isSelected
                   ? "1px solid rgba(0, 131, 61, 0.2)"
+                  : isPurchased
+                  ? "1px solid rgba(0, 0, 0, 0.05)"
                   : "1px solid #eee",
-                opacity: isFromActivePlan ? 0.8 : 1,
+                opacity: isPurchased ? 0.7 : 1,
+                position: "relative",
               }}
             >
+              {isPurchased && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "-8px",
+                    right: "10px",
+                    background: "linear-gradient(135deg, #00833D, #000000)",
+                    color: "white",
+                    fontSize: "10px",
+                    padding: "2px 8px",
+                    borderRadius: "10px",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Already Purchased
+                </div>
+              )}
+
               <input
                 type="checkbox"
                 id={`service-${service._id}`}
                 checked={isSelected}
                 onChange={() => handleServiceSelection(service._id)}
-                disabled={
-                  (selectedServices.length >= 4 && !isSelected) ||
-                  isFromActivePlan
-                }
+                disabled={isDisabled}
                 style={{
                   width: "18px",
                   height: "18px",
                   marginRight: "12px",
-                  cursor: isFromActivePlan ? "not-allowed" : "pointer",
+                  cursor: isDisabled ? "not-allowed" : "pointer",
                   accentColor: "#00833D",
                 }}
               />
@@ -358,29 +424,28 @@ const AgreementForm = () => {
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  color: "#34495e",
-                  cursor: isFromActivePlan ? "default" : "pointer",
+                  color: isDisabled ? "#95a5a6" : "#34495e",
+                  cursor: isDisabled ? "not-allowed" : "pointer",
                   fontWeight: isSelected ? "600" : "400",
                 }}
               >
                 <div>
                   {service.name}
-                  {isFromActivePlan && (
-                    <span
-                      style={{
-                        fontSize: "12px",
-                        color: "#00833D",
-                        marginLeft: "8px",
-                      }}
-                    >
-                      (Active Plan)
-                    </span>
+                  {isDisabled && !isPurchased && (
+                    <div style={{ fontSize: "12px", color: "#e74c3c" }}>
+                      Maximum selection reached
+                    </div>
                   )}
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ fontWeight: "bold", color: "#00833D" }}>
-                    {isSelected ? (
-                      <>
+                  {!isPurchased && (
+                    <>
+                      <div
+                        style={{
+                          fontWeight: "bold",
+                          color: isDisabled ? "#95a5a6" : "#00833D",
+                        }}
+                      >
                         ₹{basePrice.toLocaleString("en-IN")}
                         {planAmount?.platformFeeStatus && (
                           <span>
@@ -395,26 +460,28 @@ const AgreementForm = () => {
                             + ₹{serviceGst.toLocaleString("en-IN")} GST
                           </span>
                         )}
-                      </>
-                    ) : (
-                      "Select to see price"
-                    )}
-                  </div>
-                  {isSelected && (
-                    <div style={{ fontSize: "12px", color: "#666" }}>
-                      (Total ₹{serviceTotal.toLocaleString("en-IN")})
-                      {positionInSelected < tieredPercentages.length && (
-                        <span
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "12px",
+                          color: isDisabled ? "#bdc3c7" : "#666",
+                        }}
+                      >
+                        (Total ₹{serviceTotal.toLocaleString("en-IN")})
+                      </div>
+                      {isSelected && (
+                        <div
                           style={{
                             fontSize: "10px",
-                            color: "#888",
-                            marginLeft: "8px",
+                            color: isDisabled ? "#bdc3c7" : "#888",
                           }}
                         >
-                          {tieredPercentages[positionInSelected]}% of base price
-                        </span>
+                          {serviceChoice === "individual"
+                            ? "Fixed price"
+                            : `${tieredPercentages[effectivePosition]}% of base price`}
+                        </div>
                       )}
-                    </div>
+                    </>
                   )}
                 </div>
               </label>
@@ -422,89 +489,103 @@ const AgreementForm = () => {
           );
         })}
 
-        {newlySelectedServices.length + activePlanServices.length >= 4 && (
+        {selectedServices.length > 0 && (
           <div
             style={{
-              color: "#e74c3c",
-              fontSize: "14px",
-              marginTop: "10px",
-              textAlign: "center",
+              marginTop: "24px",
+              padding: "16px",
+              backgroundColor: "#f8f9fa",
+              borderRadius: "8px",
+              borderLeft: `4px solid #00833D`,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
             }}
           >
-            Maximum 4 services can be selected (₹
-            {tieredPrices
-              .slice(0, 4)
-              .reduce((a, b) => a + b, 0)
-              .toLocaleString("en-IN")}{" "}
-            + {planAmount?.gstStatus ? `${planAmount.gst}% GST` : ""} total)
+            <div>
+              <div style={{ fontWeight: "600", color: "#2c3e50" }}>
+                Total Amount
+              </div>
+              <div style={{ fontSize: "12px", color: "#7f8c8d" }}>
+                {selectedServices.length} service
+                {selectedServices.length !== 1 ? "s" : ""} selected
+                {disabledServices.length > 0 && (
+                  <span>, {disabledServices.length} already purchased</span>
+                )}
+              </div>
+              {serviceChoice !== "individual" && (
+                <>
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      color: "#7f8c8d",
+                      marginTop: "4px",
+                    }}
+                  >
+                    Tier percentages applied:{" "}
+                    {tieredPercentages
+                      .slice(
+                        purchasedServicesCount,
+                        purchasedServicesCount + selectedServices.length
+                      )
+                      .join("%, ")}
+                    %
+                  </div>
+                  {purchasedServicesCount + selectedServices.length < 4 && (
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        color: "#7f8c8d",
+                        marginTop: "4px",
+                      }}
+                    >
+                      Next{" "}
+                      {4 - (purchasedServicesCount + selectedServices.length)}{" "}
+                      services at{" "}
+                      {tieredPercentages
+                        .slice(
+                          purchasedServicesCount + selectedServices.length,
+                          4
+                        )
+                        .join("%, ")}
+                      %
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: "16px", color: "#666" }}>
+                Base: ₹
+                {(
+                  calculatedTotal -
+                  gstAmount -
+                  platformFeeAmount
+                ).toLocaleString("en-IN")}
+              </div>
+              {planAmount?.platformFeeStatus && (
+                <div style={{ fontSize: "16px", color: "#666" }}>
+                  Platform Fee ({planAmount.platformFee}%): ₹
+                  {platformFeeAmount.toLocaleString("en-IN")}
+                </div>
+              )}
+              {planAmount?.gstStatus && (
+                <div style={{ fontSize: "16px", color: "#666" }}>
+                  GST ({planAmount.gst}%): ₹{gstAmount.toLocaleString("en-IN")}
+                </div>
+              )}
+              <div
+                style={{
+                  fontSize: "24px",
+                  fontWeight: "700",
+                  color: "#00833D",
+                }}
+              >
+                Total: ₹{totalWithGST.toLocaleString("en-IN")}
+              </div>
+            </div>
           </div>
         )}
-
-        {/* Total Amount Box */}
-        <div
-          style={{
-            marginTop: "24px",
-            padding: "16px",
-            backgroundColor: "#f8f9fa",
-            borderRadius: "8px",
-            borderLeft: `4px solid #00833D`,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <div>
-            <div style={{ fontWeight: "600", color: "#2c3e50" }}>
-              Total Amount
-            </div>
-            <div style={{ fontSize: "12px", color: "#7f8c8d" }}>
-              {selectedServices.length} service
-              {selectedServices.length !== 1 ? "s" : ""} selected
-              {activePlanServices.length > 0 && (
-                <span> ({activePlanServices.length} from active plans)</span>
-              )}
-            </div>
-            <div
-              style={{ fontSize: "12px", color: "#7f8c8d", marginTop: "4px" }}
-            >
-              Tier pricing:{" "}
-              {selectedServices.slice(0, 4).map((_, i) => (
-                <span key={i}>
-                  {i > 0 && ", "}₹
-                  {tieredPrices[i]?.toLocaleString("en-IN") || "0"}
-                </span>
-              ))}
-            </div>
-          </div>
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: "16px", color: "#666" }}>
-              Base: ₹
-              {(totalAmount - gstAmount - platformFeeAmount).toLocaleString(
-                "en-IN"
-              )}
-            </div>
-            {planAmount?.platformFeeStatus && (
-              <div style={{ fontSize: "16px", color: "#666" }}>
-                Platform Fee ({planAmount.platformFee}%): ₹
-                {platformFeeAmount.toLocaleString("en-IN")}
-              </div>
-            )}
-            {planAmount?.gstStatus && (
-              <div style={{ fontSize: "16px", color: "#666" }}>
-                GST ({planAmount.gst}%): ₹{gstAmount.toLocaleString("en-IN")}
-              </div>
-            )}
-            <div
-              style={{
-                fontSize: "24px",
-                fontWeight: "700",
-                color: "#00833D",
-              }}
-            >
-              Total: ₹{totalWithGST.toLocaleString("en-IN")}
-            </div>
-          </div>
-        </div>
       </div>
     );
   };
@@ -598,7 +679,34 @@ const AgreementForm = () => {
         }
       }
 
-      // Create the new plan object with only service IDs
+      // Get service details for the selected services
+      let serviceDetails = [];
+      switch (serviceChoice) {
+        case "free":
+          serviceDetails = freeServices.filter((service) =>
+            freeServices.some((s) => s._id === service._id)
+          );
+          break;
+        case "individual":
+          serviceDetails = individualBusinessServices.filter((service) =>
+            selectedServices.includes(service._id)
+          );
+          break;
+        case "business":
+          serviceDetails = businessServices.filter((service) =>
+            selectedServices.includes(service._id)
+          );
+          break;
+        case "institutional":
+          serviceDetails = institutionalServices.filter((service) =>
+            selectedServices.includes(service._id)
+          );
+          break;
+        default:
+          serviceDetails = [];
+      }
+
+      // Create the new plan object with service IDs and details
       const newPlan = {
         deliveryPreference,
         serviceChoice,
@@ -607,6 +715,7 @@ const AgreementForm = () => {
           new Date().setMonth(new Date().getMonth() + 6)
         ).toISOString(),
         totalPrice: totalWithGST,
+        serviceDetails, // Add service details here
       };
 
       // Add only service IDs based on the selected plan
@@ -659,23 +768,26 @@ const AgreementForm = () => {
       const updatedPlans = [...plans, newPlan];
       setPlans(updatedPlans);
 
-      // Ask if user wants to add another plan
-      const { isConfirmed } = await Swal.fire({
+      const result = await Swal.fire({
         title: "Plan Added",
         text: "Would you like to add another plan?",
         icon: "question",
         showCancelButton: true,
         confirmButtonText: "Add Another Plan",
         cancelButtonText: "Proceed to Payment",
+        customClass: {
+          confirmButton: "confirm-gradient-button",
+          cancelButton: "cancel-gradient-button",
+        },
       });
 
-      if (isConfirmed) {
+      if (result.isConfirmed) {
         // Reset form for new plan
         setServiceChoice("free");
         setSelectedServices([]);
         setCurrentPlanIndex(updatedPlans.length);
-      } else {
-        // Submit all plans to the API
+      } else if (result.dismiss === Swal.DismissReason.cancel) {
+        // Only proceed to API call if user clicks "Proceed to Payment"
         await submitAllPlans(updatedPlans);
       }
     } catch (error) {
@@ -688,7 +800,6 @@ const AgreementForm = () => {
     }
   };
 
-  // Function to submit all plans at once
   const submitAllPlans = async (plansToSubmit) => {
     try {
       const response = await axios.post(
@@ -1950,6 +2061,80 @@ const AgreementForm = () => {
         </div>
       </div>
 
+      {serviceChoice && serviceChoice === "individual" && (
+        <div
+          style={{
+            marginBottom: "32px",
+            backgroundColor: "#ffffff",
+            padding: "24px",
+            borderRadius: "16px",
+            boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
+            border: "1px solid rgba(0, 0, 0, 0.05)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              marginBottom: "24px",
+              paddingBottom: "16px",
+              borderBottom: "1px solid rgba(0, 0, 0, 0.05)",
+            }}
+          >
+            <div
+              style={{
+                width: "4px",
+                height: "24px",
+                background: "linear-gradient(135deg, #00833D, #000000)",
+                borderRadius: "2px",
+                marginRight: "12px",
+              }}
+            ></div>
+            <h5
+              style={{
+                margin: 0,
+                color: "#2c3e50",
+                fontSize: "18px",
+                fontWeight: "700",
+                letterSpacing: "0.5px",
+              }}
+            >
+              Student
+            </h5>
+          </div>
+
+          <div style={{ marginTop: "16px" }}>
+            <label
+              htmlFor="student"
+              style={{
+                display: "block",
+                marginBottom: "8px",
+                fontWeight: "600",
+                color: "#2c3e50",
+              }}
+            >
+              Are you a student?
+            </label>
+            <select
+              id="student"
+              value={studentStatus}
+              onChange={(e) => setStudentStatus(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "12px",
+                borderRadius: "8px",
+                border: "1px solid #e0e0e0",
+                fontSize: "16px",
+                backgroundColor: "#f9f9f9",
+              }}
+            >
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </div>
+        </div>
+      )}
+
       {/* Services Checkboxes Section */}
       {serviceChoice && serviceChoice !== "free" && (
         <div
@@ -1989,10 +2174,16 @@ const AgreementForm = () => {
                 letterSpacing: "0.5px",
               }}
             >
-              Select Additional Services (₹
-              {planAmount?.basePrice?.toLocaleString("en-IN") ||
-                "2,50,000"}{" "}
-              {planAmount?.gstStatus ? `+ ${planAmount?.gst}% GST` : ""} each)
+              Select Additional Services (
+              {serviceChoice === "individual" && studentStatus === "yes" ? (
+                <>₹1,50,000</>
+              ) : (
+                <>
+                  ₹
+                  {planAmount?.basePrice?.toLocaleString("en-IN") || "2,50,000"}
+                </>
+              )}
+              {planAmount?.gstStatus ? ` + ${planAmount?.gst}% GST` : ""} each)
             </h5>
           </div>
 
@@ -2079,7 +2270,6 @@ const AgreementForm = () => {
         </div>
       </div>
 
-      {/* Add a section to display selected plans */}
       {plans.length > 0 && (
         <div
           style={{
@@ -2138,10 +2328,10 @@ const AgreementForm = () => {
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
-                  alignItems: "center",
+                  alignItems: "flex-start",
                 }}
               >
-                <div>
+                <div style={{ flex: 1 }}>
                   <h4
                     style={{
                       margin: "0 0 8px 0",
@@ -2154,14 +2344,29 @@ const AgreementForm = () => {
                   <p style={{ margin: "0 0 4px 0", color: "#7f8c8d" }}>
                     <strong>Delivery:</strong> {plan.deliveryPreference}
                   </p>
-                  <p style={{ margin: "0 0 4px 0", color: "#7f8c8d" }}>
-                    <strong>Services:</strong>{" "}
-                    {plan.individualBusinessServices?.length ||
-                      plan.businessServices?.length ||
-                      plan.institutionalServices?.length ||
-                      plan.freeOfferings?.length}{" "}
-                    selected
-                  </p>
+
+                  {/* Services list with remove buttons */}
+                  <div style={{ margin: "12px 0" }}>
+                    <strong style={{ color: "#7f8c8d" }}>Services:</strong>
+                    {plan.serviceDetails.map((service, serviceIndex) => (
+                      <div
+                        key={service._id}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          padding: "8px",
+                          backgroundColor: "white",
+                          borderRadius: "4px",
+                          margin: "8px 0",
+                          border: "1px solid #eee",
+                        }}
+                      >
+                        <span>{service.name}</span>
+                      </div>
+                    ))}
+                  </div>
+
                   <p style={{ margin: "0", color: "#7f8c8d" }}>
                     <strong>Total:</strong> ₹
                     {plan.totalPrice.toLocaleString("en-IN")}
@@ -2185,7 +2390,7 @@ const AgreementForm = () => {
                   <button
                     onClick={() => removePlan(index)}
                     style={{
-                      background: "#e74c3c",
+                      background: "linear-gradient(135deg, #00833D, #000000)",
                       border: "none",
                       color: "white",
                       padding: "6px 12px",
@@ -2193,7 +2398,7 @@ const AgreementForm = () => {
                       cursor: "pointer",
                     }}
                   >
-                    Remove
+                    Remove Plan
                   </button>
                 </div>
               </div>
@@ -2203,8 +2408,6 @@ const AgreementForm = () => {
       )}
 
       <form onSubmit={handleSubmit}>
-        {/* ... (keep all existing form elements) */}
-
         {/* Update the submit button text based on context */}
         <div
           style={{

@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { LineChart } from "@mui/x-charts/LineChart";
 import {
   Card,
   CardContent,
@@ -15,140 +14,160 @@ import {
   ListItemText,
   Avatar,
   Paper,
+  CircularProgress,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import axios from "axios";
+import ApexCharts from "react-apexcharts";
 import {
   Savings as SavingsIcon,
   CalendarToday as CalendarIcon,
   Paid as PaidIcon,
-  Checklist as ChecklistIcon,
   WorkspacePremium as WorkspacePremiumIcon,
 } from "@mui/icons-material";
-import ApexCharts from "react-apexcharts";
 
 const InvestmentPerformanceChart = () => {
   const [chartData, setChartData] = useState([]);
   const [planData, setPlanData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState(0);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const isTablet = useMediaQuery(theme.breakpoints.between("sm", "md"));
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [chartResponse, planResponse] = await Promise.all([
-          axios.get(`${import.meta.env.VITE_API_URL}getUserGrowthChart`, {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-              "Content-Type": "application/json",
-            },
-          }),
-          axios.get(`${import.meta.env.VITE_API_URL}getPlanByUserId`, {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-              "Content-Type": "application/json",
-            },
-          }),
-        ]);
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [chartResponse, planResponse] = await Promise.all([
+        axios.get(`${import.meta.env.VITE_API_URL}getUserGrowthChart`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "application/json",
+          },
+        }),
+        axios.get(`${import.meta.env.VITE_API_URL}getPlanByUserId`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "application/json",
+          },
+        }),
+      ]);
 
-        if (chartResponse.status === 200) {
-          const formattedData = chartResponse.data.data.map((item, index) => ({
-            label: item.label,
-            amount: item.amount,
+      if (chartResponse.status === 200) {
+        let chartData = chartResponse.data.data;
+
+        const hasNonFreePlan = chartData.some(
+          (plan) => plan.serviceChoice !== "free"
+        );
+
+        // Filter based on your rule
+        if (hasNonFreePlan) {
+          chartData = chartData.filter(
+            (plan) => plan.serviceChoice !== "free"
+          );
+        }
+
+        // Process all charts
+        const processedData = chartData.map((planChart) => ({
+          ...planChart,
+          chart: planChart.chart.map((item) => ({
+            ...item,
             date: new Date(item.date).toLocaleDateString("en-IN", {
               day: "2-digit",
               month: "short",
               year: "numeric",
             }),
-          }));
-          setChartData(formattedData);
-        }
+          })),
+        }));
 
-        if (planResponse.status === 200 && planResponse.data.plan) {
-          setPlanData(planResponse.data.plan);
-        }
-      } catch (error) {
-        console.error("Failed to fetch data:", error);
-        setError("Failed to load data. Please try again later.");
-      } finally {
-        setLoading(false);
+        setChartData(processedData);
       }
-    };
 
-    fetchData();
-  }, []);
-
-  const options = {
-    chart: {
-      type: "area",
-      zoom: { enabled: false },
-      toolbar: { show: false },
-    },
-    dataLabels: { enabled: false },
-    stroke: {
-      curve: "smooth",
-      width: 2,
-    },
-    fill: {
-      type: "gradient",
-      gradient: {
-        shadeIntensity: 1,
-        opacityFrom: 0.4,
-        opacityTo: 0,
-        stops: [0, 90, 100],
-      },
-    },
-    xaxis: {
-      categories: chartData.map((d) => d.label),
-      labels: {
-        rotate: -45,
-        style: {
-          fontSize: isMobile ? "10px" : "12px",
-        },
-      },
-      title: {
-        text: "Duration Period",
-        style: {
-          fontWeight: 600,
-          color: theme.palette.mode === "dark" ? "#fff" : "#2c3e50",
-        },
-      },
-    },
-    yaxis: {
-      labels: {
-        formatter: (val) => `₹${val.toLocaleString("en-IN")}`,
-        style: {
-          fontSize: isMobile ? "10px" : "12px",
-        },
-      },
-      title: {
-        text: "Amount (₹)",
-        style: {
-          fontWeight: 600,
-          color: theme.palette.mode === "dark" ? "#fff" : "#2c3e50",
-        },
-      },
-    },
-    tooltip: {
-      y: {
-        formatter: (val) => `₹${val.toLocaleString("en-IN")}`,
-      },
-    },
-    colors: [theme.palette.mode === "dark" ? "#00C853" : "#00833D"],
-    grid: {
-      borderColor: theme.palette.mode === "dark" ? "#444" : "#e5e5e5",
-    },
+      if (planResponse.status === 200) {
+        setPlanData(planResponse.data.plans);
+      }
+    } catch (error) {
+      console.error("Failed to fetch data:", error);
+      setError("Failed to load data. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const series = [
-    {
-      name: "Investment Value",
-      data: chartData.map((d) => d.amount),
-    },
-  ];
+  fetchData();
+}, []);
+
+
+  const handleTabChange = (event, newValue) => {
+    setActiveTab(newValue);
+  };
+
+  const getChartOptions = (data) => {
+    return {
+      chart: {
+        type: "area",
+        zoom: { enabled: false },
+        toolbar: { show: false },
+      },
+      dataLabels: { enabled: false },
+      stroke: {
+        curve: "smooth",
+        width: 2,
+      },
+      fill: {
+        type: "gradient",
+        gradient: {
+          shadeIntensity: 1,
+          opacityFrom: 0.4,
+          opacityTo: 0,
+          stops: [0, 90, 100],
+        },
+      },
+      xaxis: {
+        categories: data.map((d) => d.label),
+        labels: {
+          rotate: -45,
+          style: {
+            fontSize: isMobile ? "10px" : "12px",
+          },
+        },
+        title: {
+          text: "Duration Period",
+          style: {
+            fontWeight: 600,
+            color: theme.palette.mode === "dark" ? "#fff" : "#2c3e50",
+          },
+        },
+      },
+      yaxis: {
+        labels: {
+          formatter: (val) => `₹${val.toLocaleString("en-IN")}`,
+          style: {
+            fontSize: isMobile ? "10px" : "12px",
+          },
+        },
+        title: {
+          text: "Amount (₹)",
+          style: {
+            fontWeight: 600,
+            color: theme.palette.mode === "dark" ? "#fff" : "#2c3e50",
+          },
+        },
+      },
+      tooltip: {
+        y: {
+          formatter: (val) => `₹${val.toLocaleString("en-IN")}`,
+        },
+      },
+      colors: [theme.palette.mode === "dark" ? "#00C853" : "#00833D"],
+      grid: {
+        borderColor: theme.palette.mode === "dark" ? "#444" : "#e5e5e5",
+      },
+    };
+  };
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-IN", {
@@ -256,9 +275,78 @@ const InvestmentPerformanceChart = () => {
                     color: "#00833D",
                   }}
                 >
-                  Investment Growth Over Time
+                  Example Growth Over Time
                 </Typography>
               </div>
+
+              {chartData.length > 0 && (
+                <Box
+                  sx={{
+                    width: "100%",
+                    overflow: "hidden",
+                    mb: 2,
+                    borderBottom: 1,
+                    borderColor: "divider",
+                  }}
+                >
+                  <Tabs
+                    value={activeTab}
+                    onChange={handleTabChange}
+                    variant="scrollable"
+                    scrollButtons="auto"
+                    allowScrollButtonsMobile
+                    aria-label="investment plan tabs"
+                    sx={{
+                      "& .MuiTab-root": {
+                        fontSize: isMobile ? "0.7rem" : "0.875rem",
+                        minWidth: "unset",
+                        padding: isMobile ? "6px 8px" : "12px 16px",
+                      },
+                      "& .MuiTabs-scrollButtons": {
+                        width: "32px",
+                        "&.Mui-disabled": {
+                          opacity: 0.3,
+                        },
+                      },
+                    }}
+                  >
+                    {chartData.map((plan, index) => (
+                      <Tab
+                        key={plan.planId}
+                        label={
+                          <Box sx={{ display: "flex", alignItems: "center" }}>
+                            {isMobile && (
+                              <Avatar
+                                sx={{
+                                  width: 24,
+                                  height: 24,
+                                  mr: 1,
+                                  bgcolor:
+                                    index === activeTab
+                                      ? "#00833D"
+                                      : "action.selected",
+                                  fontSize: "0.75rem",
+                                }}
+                              >
+                                {index + 1}
+                              </Avatar>
+                            )}
+                            <span>
+                              {isMobile
+                                ? `${plan.serviceChoice.slice(0, 3)}`
+                                : `Plan ${index + 1} (${plan.serviceChoice})`}
+                            </span>
+                          </Box>
+                        }
+                        sx={{
+                          textTransform: "none",
+                          fontWeight: index === activeTab ? 600 : 400,
+                        }}
+                      />
+                    ))}
+                  </Tabs>
+                </Box>
+              )}
 
               <div
                 style={{
@@ -266,17 +354,34 @@ const InvestmentPerformanceChart = () => {
                   flex: 1,
                 }}
               >
-                {loading ? (
-                  <div className="d-flex justify-content-center align-items-center h-100">
-                    <CircularProgress />
-                  </div>
-                ) : chartData.length > 0 ? (
-                  <ApexCharts
-                    options={options}
-                    series={series}
-                    type="area"
-                    height={isMobile ? 300 : isTablet ? 350 : 400}
-                  />
+                {chartData.length > 0 ? (
+                  <>
+                    {chartData.map((plan, index) => (
+                      <div
+                        key={plan.planId}
+                        style={{
+                          display: index === activeTab ? "block" : "none",
+                        }}
+                      >
+                        <ApexCharts
+                          options={getChartOptions(plan.chart)}
+                          series={[
+                            {
+                              name: "Investment Value",
+                              data: plan.chart.map((d) => d.amount),
+                            },
+                          ]}
+                          type="area"
+                          height={isMobile ? 300 : isTablet ? 350 : 400}
+                        />
+                        <Box mt={2} textAlign="center">
+                          <Typography variant="body2" color="textSecondary">
+                            Plan started on {formatDate(plan.createdAt)}
+                          </Typography>
+                        </Box>
+                      </div>
+                    ))}
+                  </>
                 ) : (
                   <div className="d-flex justify-content-center align-items-center h-100">
                     <Typography color="text.secondary">
@@ -322,13 +427,14 @@ const InvestmentPerformanceChart = () => {
                     color: "#00833D",
                   }}
                 >
-                  Your Financial Plan
+                  Your Financial Plans
                 </Typography>
               </div>
 
-              {planData ? (
-                <>
+              {planData?.length > 0 ? (
+                planData.map((plan, planIndex) => (
                   <Paper
+                    key={plan._id}
                     elevation={0}
                     className="mb-4 p-3"
                     style={{
@@ -339,41 +445,30 @@ const InvestmentPerformanceChart = () => {
                       borderRadius: "8px",
                     }}
                   >
+                    <Typography
+                      variant="h5"
+                      style={{
+                        fontWeight: 600,
+                        marginBottom: "8px",
+                        color: "#00833D",
+                        fontSize: isMobile ? "1.2rem" : "1rem",
+                      }}
+                    >
+                      Plan #{planIndex + 1} ({plan.serviceChoice})
+                    </Typography>
+
                     <div className="row">
                       <div className="col-6 mb-3">
                         <div className="d-flex align-items-center">
                           <CalendarIcon
-                            style={{
-                              marginRight: "8px",
-                              color:
-                                theme.palette.mode === "dark"
-                                  ? "#00C853"
-                                  : "#00833D",
-                            }}
+                            style={{ marginRight: "8px", color: "#00833D" }}
                           />
                           <div>
-                            <Typography
-                              variant="caption"
-                              style={{
-                                color:
-                                  theme.palette.mode === "dark"
-                                    ? "rgba(255,255,255,0.7)"
-                                    : "text.secondary",
-                              }}
-                            >
+                            <Typography variant="caption" color="textSecondary">
                               Start Date
                             </Typography>
-                            <Typography
-                              variant="body2"
-                              className="d-block"
-                              style={{
-                                color:
-                                  theme.palette.mode === "dark"
-                                    ? "#fff"
-                                    : "inherit",
-                              }}
-                            >
-                              {formatDate(planData.startDate)}
+                            <Typography variant="body2">
+                              {formatDate(plan.startDate)}
                             </Typography>
                           </div>
                         </div>
@@ -381,37 +476,14 @@ const InvestmentPerformanceChart = () => {
                       <div className="col-6 mb-3">
                         <div className="d-flex align-items-center">
                           <CalendarIcon
-                            style={{
-                              marginRight: "8px",
-                              color:
-                                theme.palette.mode === "dark"
-                                  ? "#00C853"
-                                  : "#00833D",
-                            }}
+                            style={{ marginRight: "8px", color: "#00833D" }}
                           />
                           <div>
-                            <Typography
-                              variant="caption"
-                              style={{
-                                color:
-                                  theme.palette.mode === "dark"
-                                    ? "rgba(255,255,255,0.7)"
-                                    : "text.secondary",
-                              }}
-                            >
+                            <Typography variant="caption" color="textSecondary">
                               End Date
                             </Typography>
-                            <Typography
-                              variant="body2"
-                              className="d-block"
-                              style={{
-                                color:
-                                  theme.palette.mode === "dark"
-                                    ? "#fff"
-                                    : "inherit",
-                              }}
-                            >
-                              {formatDate(planData.endDate)}
+                            <Typography variant="body2">
+                              {formatDate(plan.endDate)}
                             </Typography>
                           </div>
                         </div>
@@ -419,37 +491,17 @@ const InvestmentPerformanceChart = () => {
                       <div className="col-12 mb-2">
                         <div className="d-flex align-items-center">
                           <PaidIcon
-                            style={{
-                              marginRight: "8px",
-                              color:
-                                theme.palette.mode === "dark"
-                                  ? "#00C853"
-                                  : "#00833D",
-                            }}
+                            style={{ marginRight: "8px", color: "#00833D" }}
                           />
                           <div>
-                            <Typography
-                              variant="caption"
-                              style={{
-                                color:
-                                  theme.palette.mode === "dark"
-                                    ? "rgba(255,255,255,0.7)"
-                                    : "text.secondary",
-                              }}
-                            >
+                            <Typography variant="caption" color="textSecondary">
                               Total Plan Value
                             </Typography>
                             <Typography
                               variant="h5"
-                              className="d-block"
-                              style={{
-                                color:
-                                  theme.palette.mode === "dark"
-                                    ? "#00C853"
-                                    : "#00833D",
-                              }}
+                              style={{ color: "#00833D" }}
                             >
-                              {formatCurrency(planData.totalPrice)}
+                              {formatCurrency(plan.totalPrice)}
                             </Typography>
                           </div>
                         </div>
@@ -458,10 +510,8 @@ const InvestmentPerformanceChart = () => {
 
                     <div className="mt-3">
                       <Chip
-                        label={planData.status.toUpperCase()}
-                        color={
-                          planData.status === "active" ? "success" : "default"
-                        }
+                        label={plan.status?.toUpperCase() || "UNKNOWN"}
+                        color={plan.status === "active" ? "success" : "default"}
                         size="small"
                         style={{
                           fontWeight: 600,
@@ -471,7 +521,7 @@ const InvestmentPerformanceChart = () => {
                         }}
                       />
                       <Chip
-                        label={planData.serviceChoice}
+                        label={plan.serviceChoice}
                         color="info"
                         size="small"
                         style={{
@@ -482,7 +532,7 @@ const InvestmentPerformanceChart = () => {
                         }}
                       />
                       <Chip
-                        label={planData.deliveryPreference}
+                        label={plan.deliveryPreference}
                         color="secondary"
                         size="small"
                         style={{
@@ -492,78 +542,65 @@ const InvestmentPerformanceChart = () => {
                         }}
                       />
                     </div>
-                  </Paper>
 
-                  <Typography
-                    variant="h5"
-                    className="mb-2 d-flex align-items-center"
-                    style={{
-                      fontWeight: 600,
-                      color: "#00833D",
-                    }}
-                  >
-                    <ChecklistIcon
+                    <Typography
+                      variant="subtitle1"
+                      className="mt-3"
+                      style={{ fontWeight: 600, color: "#00833D" }}
+                    >
+                      Included Services
+                    </Typography>
+                    <List
+                      dense
                       style={{
-                        marginRight: "8px",
-                        color: "#00833D",
+                        maxHeight: isMobile ? "200px" : "250px",
+                        overflow: "auto",
+                        scrollbarWidth: "thin",
+                        scrollbarColor: "#00833D #eee",
                       }}
-                    />
-                    Included Services
-                  </Typography>
-
-                  <List
-                    dense
-                    className="flex-grow-1"
-                    style={{
-                      maxHeight: isMobile ? "200px" : "250px",
-                      overflow: "auto",
-                      scrollbarWidth: "thin",
-                      scrollbarColor: `${
-                        theme.palette.mode === "dark"
-                          ? "#00833D #000"
-                          : "#00833D #eee"
-                      }`,
-                    }}
-                  >
-                    {planData.individualBusinessServices.map(
-                      (service, index) => (
+                    >
+                      {(plan.individualBusinessServices || []).map(
+                        (service, idx) => (
+                          <React.Fragment key={service._id}>
+                            <ListItem className="px-0">
+                              <ListItemText primary={service.name} />
+                            </ListItem>
+                            {idx <
+                              plan.individualBusinessServices.length - 1 && (
+                              <Divider />
+                            )}
+                          </React.Fragment>
+                        )
+                      )}
+                      {(plan.businessServices || []).map((service, idx) => (
                         <React.Fragment key={service._id}>
                           <ListItem className="px-0">
-                            <ListItemText
-                              primary={service.name}
-                              primaryTypographyProps={{
-                                variant: "body2",
-                                style: {
-                                  color:
-                                    theme.palette.mode === "dark"
-                                      ? "#fff"
-                                      : "inherit",
-                                },
-                              }}
-                            />
+                            <ListItemText primary={service.name} />
                           </ListItem>
-                          {index <
-                            planData.individualBusinessServices.length - 1 && (
-                            <Divider
-                              component="li"
-                              style={{
-                                margin: "4px 0",
-                                backgroundColor:
-                                  theme.palette.mode === "dark"
-                                    ? "rgba(255,255,255,0.1)"
-                                    : undefined,
-                              }}
-                            />
+                          {idx < plan.businessServices.length - 1 && (
+                            <Divider />
                           )}
                         </React.Fragment>
-                      )
-                    )}
-                  </List>
-                </>
+                      ))}
+                      {(plan.institutionalServices || []).map(
+                        (service, idx) => (
+                          <React.Fragment key={service._id}>
+                            <ListItem className="px-0">
+                              <ListItemText primary={service.name} />
+                            </ListItem>
+                            {idx < plan.institutionalServices.length - 1 && (
+                              <Divider />
+                            )}
+                          </React.Fragment>
+                        )
+                      )}
+                    </List>
+                  </Paper>
+                ))
               ) : (
                 <div className="d-flex justify-content-center align-items-center h-100">
                   <Typography color="text.secondary">
-                    No active plan found.
+                    No active plans found.
                   </Typography>
                 </div>
               )}
